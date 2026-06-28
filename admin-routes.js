@@ -133,10 +133,8 @@ router.get('/api/funnel', (req, res) => {
   const stageDefs = [
     { key: 'arrived',            label: 'Llegaron' },
     { key: 'menu_seen',          label: 'Vieron el menú' },
-    { key: 'purchase_started',   label: 'Iniciaron compra' },
-    { key: 'purchase_completed', label: 'Enviaron comprobante' },
-    { key: 'register_started',   label: 'Iniciaron registro' },
-    { key: 'register_completed', label: 'Completaron registro' },
+    { key: 'purchase_started',   label: 'Iniciaron pedido' },
+    { key: 'purchase_completed', label: 'Completaron pedido' },
     { key: 'followup_sent',      label: 'Recibieron seguimiento 24h' },
     { key: 'broadcast_sent',     label: 'Recibieron broadcast' }
   ]
@@ -285,13 +283,13 @@ router.put('/api/transfers/:id', async (req, res) => {
   // Notify user via WhatsApp on status change
   if (updated.from && updates.status === 'verified') {
     try {
-      await sendMessage(updated.from, `🎉 *¡Pago confirmado!*\n\nTu transferencia ha sido verificada.\n\n📦 Plan: ${updated.planName || ''} — ${updated.periodLabel || ''}\n📋 Orden: ${updated.tradeNo || ''}\n\nTu servicio será activado en breve. ¡Gracias por tu compra!\n\nEscribe *hola* para volver al menú.`)
+      await sendMessage(updated.from, `🎉 *¡Pago confirmado!*\n\nTu transferencia ha sido verificada.\n\n📦 Pedido: ${updated.planName || ''}\n📋 Referencia: ${updated.tradeNo || ''}\n\nNos pondremos en contacto contigo para coordinar la entrega. ¡Gracias por tu compra! 👟\n\nEscribe *menú* para volver al inicio.`)
     } catch (e) {
       console.error('Error notificando pago verificado:', e.message)
     }
   } else if (updated.from && updates.status === 'rejected') {
     try {
-      await sendMessage(updated.from, `⚠️ *Transferencia no verificada*\n\nNo pudimos confirmar tu comprobante de pago.\n\n📋 Orden: ${updated.tradeNo || ''}\n\nSi crees que es un error, envía tu comprobante de nuevo o contacta a un asesor.\n\nEscribe *hola* para volver al menú.`)
+      await sendMessage(updated.from, `⚠️ *Transferencia no verificada*\n\nNo pudimos confirmar tu comprobante de pago.\n\n📋 Referencia: ${updated.tradeNo || ''}\n\nSi crees que es un error, envía tu comprobante de nuevo o escribe *asesor* para hablar con nosotros.`)
     } catch (e) {
       console.error('Error notificando pago rechazado:', e.message)
     }
@@ -317,60 +315,6 @@ router.delete('/api/logs', (req, res) => {
   res.json({ ok: true })
 })
 
-router.get('/api/ratings', (req, res) => {
-  res.json(storage.getRatings().reverse())
-})
-
-router.post('/api/ratings/:id/approve', async (req, res) => {
-  const rating = storage.getRatings().find(r => r.id === req.params.id)
-  if (!rating) return res.status(404).json({ error: 'No encontrado' })
-  if (rating.credited) return res.status(400).json({ error: 'Ya acreditado' })
-
-  const { creditBalance } = require('./v2board')
-  const cfg = storage.getConfig()
-  const creditAmt = cfg.RATING_CREDIT_AMOUNT || 30
-  const display = cfg.RATING_CREDIT_DISPLAY || '$30'
-
-  try {
-    creditBalance(rating.userId, creditAmt * 100)
-  } catch (e) {
-    console.error('[RATING] Error crediting balance:', e.message)
-    return res.status(500).json({ error: 'Error al acreditar saldo' })
-  }
-
-  storage.updateRating(req.params.id, { credited: true, approvedAt: new Date().toISOString() })
-
-  // Notify user via WhatsApp
-  try {
-    const { sendMessage } = require('./whatsapp')
-    await sendMessage(rating.from, `✅ ¡Tu reseña fue verificada! Se acreditaron *${display} MXN* a tu cuenta VPNMax.\n\n¡Gracias por apoyar VPNMax! ⭐`)
-  } catch (e) {
-    console.error('[RATING] Error notificando al usuario:', e.message)
-  }
-
-  res.json({ ok: true })
-})
-
-router.post('/api/ratings/:id/reject', async (req, res) => {
-  const rating = storage.getRatings().find(r => r.id === req.params.id)
-  if (!rating) return res.status(404).json({ error: 'No encontrado' })
-
-  storage.updateRating(req.params.id, { credited: false, rejected: true, rejectedAt: new Date().toISOString() })
-
-  try {
-    const { sendMessage } = require('./whatsapp')
-    await sendMessage(rating.from, `Lo sentimos, no pudimos verificar tu reseña. Asegúrate de que la captura muestre claramente tu calificación de 5 estrellas en Play Store o App Store y vuelve a intentarlo.`)
-  } catch (e) {
-    console.error('[RATING] Error notificando rechazo:', e.message)
-  }
-
-  res.json({ ok: true })
-})
-
-router.delete('/api/ratings/:id', (req, res) => {
-  storage.deleteRating(req.params.id)
-  res.json({ ok: true })
-})
 
 router.get('/api/stats', (req, res) => {
   const logs = storage.getLogs(5000)

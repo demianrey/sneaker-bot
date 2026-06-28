@@ -4,8 +4,7 @@ const bodyParser = require('body-parser')
 const path = require('path')
 const { sendMessage, sendMedia } = require('./whatsapp')
 const { handleMessage } = require('./intents')
-const { initDefaults, addLog, addTicket, addTransfer, addRating, updateRating, getTransfers, updateTransfer, getConfig, setConfig, logFunnelEvent, getFunnel, getLastMessageTimes, getLogs, readJSON, writeJSON } = require('./admin/storage')
-const { getOrderStatus, creditBalance } = require('./v2board')
+const { initDefaults, addLog, addTicket, getConfig, setConfig, logFunnelEvent, getFunnel, getLastMessageTimes, getLogs, readJSON, writeJSON } = require('./admin/storage')
 const adminRoutes = require('./admin-routes')
 const tg = require('./telegram')
 
@@ -110,7 +109,7 @@ app.post('/webhook', async (req, res) => {
       mediaInfo = { type: 'document', mediaId: message.document.id, mimeType: message.document.mime_type }
     }
 
-    const { reply, intent, ticket, notifyHuman, media, transfer, rating, logMessage, followUp } = await handleMessage(text, from, mediaInfo, adRef)
+    const { reply, intent, ticket, notifyHuman, media, logMessage, followUp } = await handleMessage(text, from, mediaInfo, adRef)
     await sendMessage(from, reply)
 
     if (media) {
@@ -151,34 +150,6 @@ app.post('/webhook', async (req, res) => {
       }
     }
 
-    // If a purchase flow returned a transfer receipt, save it and notify admin
-    if (transfer) {
-      logFunnelEvent(from, 'purchase_completed')
-      const saved = addTransfer(transfer)
-      const cfg = getConfig()
-      const baseUrl = cfg.BOT_BASE_URL || 'https://bot.demianred.com'
-      const receiptUrl = `${baseUrl}/receipts/${saved.receiptFilename}`
-      const msg = `🧾 Comprobante de +${saved.from}\n👉 https://wa.me/${saved.from}`
-      try {
-        await notifyAdmin(msg, receiptUrl, saved.receiptMimeType)
-      } catch (e) {
-        console.error('Error enviando comprobante a asesor:', e.response?.data || e.message)
-      }
-    }
-
-    // If a rating flow completed, save + notify admin for manual review
-    if (rating) {
-      const saved = addRating(rating)
-      const cfg = getConfig()
-      const display = cfg.RATING_CREDIT_DISPLAY || '$30'
-      const baseUrl = cfg.BOT_BASE_URL || 'https://bot.demianred.com'
-      const screenshotUrl = saved.ratingFilename ? `${baseUrl}/receipts/${saved.ratingFilename}` : null
-      const adminMsg = `⭐ *Calificación pendiente de revisión*\n\n📱 De: +${saved.from}\n📧 Correo: ${escapeMarkdown(saved.email)}\n💰 Premio: ${display} MXN\n\n✅ Aprueba desde el panel para acreditar\n👉 https://wa.me/${saved.from}`
-      try {
-        await notifyAdmin(adminMsg, screenshotUrl, saved.ratingMimeType)
-      } catch (e) { console.error('[RATING] Error notificando calificación:', e.message) }
-    }
-
     // If an option has notifyHuman, alert the admin
     if (notifyHuman) {
       const msg = `📩 *Un usuario quiere contactarte*\n\n📱 *De:* +${notifyHuman.from}\n📋 *Opción:* ${escapeMarkdown(notifyHuman.optionLabel)}\n\n👉 Responder: https://wa.me/${notifyHuman.from}`
@@ -196,9 +167,9 @@ app.post('/webhook', async (req, res) => {
   }
 })
 
-// --- 24h follow-up for users who didn't purchase ---
-const FOLLOWUP_MIN_MS = 20 * 60 * 60 * 1000   // send between 20h
-const FOLLOWUP_MAX_MS = 23.5 * 60 * 60 * 1000 // and 23.5h after last message
+// --- 24h follow-up for users who didn't complete a purchase ---
+const FOLLOWUP_MIN_MS = 20 * 60 * 60 * 1000
+const FOLLOWUP_MAX_MS = 23.5 * 60 * 60 * 1000
 
 async function checkFollowUps() {
   const now = Date.now()
@@ -209,11 +180,7 @@ async function checkFollowUps() {
   const followedUp = new Set(funnelEvents.filter(e => e.event === 'followup_sent').map(e => e.whatsapp))
 
   const cfg = getConfig()
-  const android = cfg.PLAY_STORE_URL ? `🤖 Android: ${cfg.PLAY_STORE_URL}` : ''
-  const apple = cfg.APP_STORE_URL ? `🍎 iPhone: ${cfg.APP_STORE_URL}` : ''
-  const links = [android, apple].filter(Boolean).join('\n')
-  const followupMsg = cfg.FOLLOWUP_MESSAGE ||
-    `¡Hola! 👋 Por si te quedaron dudas sobre *VPNMax*...\n\nRecuerda que al registrarte en la app recibes *1 GB gratis* sin fecha de vencimiento 🎁\n\n${links}\n\n¿Tienes alguna pregunta? Escríbeme o escribe *hola* para ver el menú.`
+  const followupMsg = cfg.FOLLOWUP_MESSAGE || '👋 ¡Hola! ¿Tienes alguna duda sobre nuestros productos? Escribe *menú* para ver las opciones.'
 
   for (const [whatsapp, lastTime] of Object.entries(lastMsgTimes)) {
     const elapsed = now - lastTime
@@ -232,83 +199,7 @@ async function checkFollowUps() {
 }
 
 setInterval(checkFollowUps, 30 * 60 * 1000)
-setTimeout(checkFollowUps, 60 * 1000) // first check 1 min after startup
-
-// --- 3-4h follow-up for high-interest users who haven't purchased ---
-const INTEREST_FOLLOWUP_MIN_MS = 3 * 60 * 60 * 1000   // 3h
-const INTEREST_FOLLOWUP_MAX_MS = 4 * 60 * 60 * 1000   // 4h
-
-async function checkInterestFollowUps() {
-  const now = Date.now()
-  const lastMsgTimes = getLastMessageTimes()
-  const funnelEvents = getFunnel()
-
-  const purchased = new Set(funnelEvents.filter(e => e.event === 'purchase_completed').map(e => e.whatsapp))
-  const alreadySent = new Set(funnelEvents.filter(e => e.event === 'interest_followup_sent').map(e => e.whatsapp))
-  const interested = new Set(funnelEvents.filter(e => e.event === 'interest_shown').map(e => e.whatsapp))
-  const requestedHuman = new Set(funnelEvents.filter(e => e.event === 'requested_human').map(e => e.whatsapp))
-
-  const cfg = getConfig()
-  const android = cfg.PLAY_STORE_URL ? `🤖 Android: ${cfg.PLAY_STORE_URL}` : ''
-  const apple = cfg.APP_STORE_URL ? `🍎 iPhone: ${cfg.APP_STORE_URL}` : ''
-  const links = [android, apple].filter(Boolean).join('\n')
-  const msg = `¡Hola! 👋 ¿Quedaste con alguna duda sobre *VPNMax*?\n\nRecuerda que puedes probarlo gratis — al registrarte en la app recibes *1 GB sin fecha de vencimiento* 🎁\n\n${links}\n\n¿Tienes alguna pregunta? Escríbeme aquí o contacta con un asesor.`
-
-  for (const [whatsapp, lastTime] of Object.entries(lastMsgTimes)) {
-    const elapsed = now - lastTime
-    if (elapsed < INTEREST_FOLLOWUP_MIN_MS || elapsed > INTEREST_FOLLOWUP_MAX_MS) continue
-    if (!interested.has(whatsapp)) continue
-    if (purchased.has(whatsapp)) continue
-    if (alreadySent.has(whatsapp)) continue
-    if (requestedHuman.has(whatsapp)) continue
-
-    try {
-      await sendMessage(whatsapp, msg)
-      logFunnelEvent(whatsapp, 'interest_followup_sent')
-      console.log('[INTEREST-FOLLOWUP] Sent to', whatsapp)
-    } catch (e) {
-      console.error('[INTEREST-FOLLOWUP] Error sending to', whatsapp, e.message)
-    }
-  }
-}
-
-setInterval(checkInterestFollowUps, 30 * 60 * 1000)
-setTimeout(checkInterestFollowUps, 90 * 1000)
-
-// --- Poll pending transfers against V2Board order status ---
-const POLL_INTERVAL = 2 * 60 * 1000 // 2 minutes
-
-async function checkPendingTransfers() {
-  const transfers = getTransfers().filter(t => t.status === 'pending' && t.tradeNo)
-  if (!transfers.length) return
-
-  for (const t of transfers) {
-    try {
-      const order = await getOrderStatus(t.tradeNo)
-      if (!order) continue
-
-      // status: 0=pending, 1=paid, 2=cancelled, 3=completed
-      if (order.status >= 1 && order.status !== 2) {
-        updateTransfer(t.id, { status: 'verified', reviewedAt: new Date().toISOString() })
-        console.log('[TRANSFER-POLL] Order paid, verified:', t.tradeNo)
-
-        if (t.from) {
-          try {
-            await sendMessage(t.from, `🎉 *¡Pago confirmado!*\n\nTu transferencia ha sido verificada.\n\n📦 Plan: ${t.planName || ''} — ${t.periodLabel || ''}\n📋 Orden: ${t.tradeNo}\n\nTu servicio está activo. ¡Gracias por tu compra!\n\nEscribe *hola* para volver al menú.`)
-          } catch (e) {
-            console.error('[TRANSFER-POLL] Error notifying user:', e.message)
-          }
-        }
-      }
-    } catch (e) {
-      console.error('[TRANSFER-POLL] Error checking order', t.tradeNo, e.message)
-    }
-  }
-}
-
-setInterval(checkPendingTransfers, POLL_INTERVAL)
-// Run once after startup (wait 30s for v2board token to be ready)
-setTimeout(checkPendingTransfers, 30000)
+setTimeout(checkFollowUps, 60 * 1000)
 
 // --- Daily digest: flag conversations where the bot likely gave a poor/incomplete answer ---
 const BAD_ANSWER_PHRASES = [
