@@ -1,0 +1,37 @@
+[
+  {
+    "id": "kb_envios",
+    "title": "Política de Envíos",
+    "content": "Hacemos envíos a toda la República Mexicana. El tiempo de entrega es de {{SHIPPING_DAYS}} una vez confirmado el pago. El costo de envío es {{SHIPPING_COST}}. Trabajamos con Estafeta, FedEx y DHL. Al confirmar tu pedido te enviamos el número de rastreo por WhatsApp."
+  },
+  {
+    "id": "kb_cambios",
+    "title": "Política de Cambios y Devoluciones",
+    "content": "{{RETURN_POLICY}}. El producto debe estar sin uso, en su caja original y con todas las etiquetas. No aplica para productos en oferta o liquidación. Los gastos de envío en cambios corren por cuenta del cliente en el primer cambio; si hubo un error nuestro, nosotros cubrimos el envío."
+  },
+  {
+    "id": "kb_autenticidad",
+    "title": "Autenticidad de Productos",
+    "content": "Todos nuestros productos son 100% originales. Trabajamos directamente con distribuidores autorizados. Cada par incluye caja original, etiquetas y accesorios de fábrica. Emitimos factura electrónica (CFDI) a quien la solicite."
+  },
+  {
+    "id": "kb_marcas",
+    "title": "Marcas Disponibles",
+    "content": "Manejamos Nike, Jordan Brand, Adidas, Adidas Originals, New Balance, Vans, Converse, Puma, Reebok, Skechers, FILA y más. Si buscas una marca o modelo específico que no ves en el catálogo, pregúntanos — podemos conseguirlo por encargo."
+  },
+  {
+    "id": "kb_encargo",
+    "title": "Pedidos por Encargo",
+    "content": "Si el modelo que buscas no está en stock, podemos conseguirlo por encargo. El tiempo de espera varía entre 1 y 3 semanas. Se requiere un anticipo del 50% para iniciar el encargo. Escribe *asesor* para hablar con alguien de nuestro equipo sobre un encargo especial."
+  },
+  {
+    "id": "kb_mayoreo",
+    "title": "Ventas al Mayoreo",
+    "content": "Sí manejamos ventas al mayoreo a partir de 6 pares. Los precios y condiciones especiales se manejan directamente con nuestro equipo. Escribe *asesor* para que te contactemos con información de mayoreo."
+  },
+  {
+    "id": "kb_facturacion",
+    "title": "Facturación",
+    "content": "Emitimos factura electrónica (CFDI 4.0). Para solicitarla necesitamos tu RFC, razón social, régimen fiscal, dirección fiscal y uso del CFDI. La factura se emite el mismo día de la compra. Solicítala al momento de comprar o dentro de los primeros 3 días hábiles."
+  }
+]

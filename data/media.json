@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Paquetes telcel",
+    "type": "image",
+    "url": "https://v2.demianred.com/img/tcpaquetes.png",
+    "caption": "Se recomienda el de $150",
+    "id": "media_mlgvy334z8ch"
+  },
+  {
+    "name": "Compartir internet 1",
+    "type": "image",
+    "url": "https://demianred.com/img/share1.jpg",
+    "caption": "Paso 1: Abre el menú (☰) y selecciona \"Compartir internet\"",
+    "id": "media_mqk61f1qo9d7"
+  },
+  {
+    "name": "Compartir internet 2",
+    "type": "image",
+    "url": "https://demianred.com/img/share2.jpg",
+    "caption": "Paso 2: Activa el punto de acceso WiFi y \"Compartir internet\". Usa la IP y puertos que aparecen para configurar el proxy en el otro dispositivo.",
+    "id": "media_mqk61uhne8z2"
+  }
+]

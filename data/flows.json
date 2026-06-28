@@ -1,0 +1,182 @@
+{
+  "menu": {
+    "triggers": ["hola", "buenas", "hello", "hi", "menu", "menú", "inicio", "start", "empezar"],
+    "welcomeMessage": "👟 ¡Bienvenido a *{{STORE_NAME}}*! Somos tu tienda de sneakers de confianza.\n\nEscríbenos cuando quieras, estamos aquí para ayudarte a encontrar el par perfecto. 🔥",
+    "cooldownMs": 120000,
+    "fullMenuHeader": "👟 *{{STORE_NAME}}* — ¿En qué te ayudamos hoy?",
+    "fullMenuFooter": "\n💬 También puedes escribir directamente lo que buscas.",
+    "shortMenuHeader": "¿Algo más en lo que pueda ayudarte?"
+  },
+  "options": [
+    {
+      "id": "opt_catalogo",
+      "key": "1",
+      "label": "Catálogo y modelos",
+      "intent": "catalogo",
+      "response": "🔍 *Nuestro catálogo*\n\nTenemos las últimas colecciones de:\n• Nike, Adidas, New Balance, Jordan\n• Vans, Converse, Puma y más\n\n📲 Visita nuestro catálogo completo:\n{{SITE_URL}}\n\nO síguenos en Instagram para ver los últimos drops:\n{{INSTAGRAM_URL}}\n\n¿Buscas algún modelo en específico? ¡Dinos cuál y te ayudamos a encontrarlo! 👟",
+      "flowId": null,
+      "notifyHuman": false,
+      "mediaId": null
+    },
+    {
+      "id": "opt_tallas",
+      "key": "2",
+      "label": "Guía de tallas",
+      "intent": "tallas",
+      "response": "📏 *Guía de tallas (MX → US → CM)*\n\n| MX | US H | US M | CM |\n|-----|------|------|----|\n| 22  | 4    | 5.5  | 22 |\n| 23  | 5    | 6.5  | 23 |\n| 24  | 6    | 7.5  | 24 |\n| 25  | 7    | 8.5  | 25 |\n| 26  | 8    | 9.5  | 26 |\n| 27  | 9    | 10.5 | 27 |\n| 28  | 10   | 11.5 | 28 |\n| 29  | 11   | 12.5 | 29 |\n| 30  | 12   | 13.5 | 30 |\n\n💡 *Tip:* Si estás entre tallas, te recomendamos ir a la talla mayor. Para modelos Nike React o Air Max, puedes pedir tu talla exacta.\n\n¿Te gustaría hacer un pedido? Escribe *comprar* 🛒",
+      "flowId": null,
+      "notifyHuman": false,
+      "mediaId": null
+    },
+    {
+      "id": "opt_comprar",
+      "key": "3",
+      "label": "Comprar / hacer pedido",
+      "intent": "purchase",
+      "response": "",
+      "flowId": "flow_comprar",
+      "notifyHuman": false,
+      "mediaId": null
+    },
+    {
+      "id": "opt_pago",
+      "key": "4",
+      "label": "Métodos de pago",
+      "intent": "pago",
+      "response": "💳 *Métodos de pago aceptados*\n\n🏦 *Transferencia bancaria*\nBanco: {{BANK_NAME}}\nCuenta: {{BANK_ACCOUNT}}\nCLABE: {{BANK_CLABE}}\nTitular: {{BANK_HOLDER}}\n\n📲 *Pago en línea*\n• Mercado Pago (tarjeta débito/crédito)\n• OXXO Pay\n\n🏪 *Pago en tienda*\nEfectivo o terminal bancaria\n{{STORE_ADDRESS}}\nHorario: {{STORE_HOURS}}\n\n¿Listo para comprar? Escribe *comprar* 🛒",
+      "flowId": null,
+      "notifyHuman": false,
+      "mediaId": null
+    },
+    {
+      "id": "opt_pedido",
+      "key": "5",
+      "label": "Mi pedido / seguimiento",
+      "intent": "seguimiento",
+      "response": "",
+      "flowId": "flow_seguimiento",
+      "notifyHuman": false,
+      "mediaId": null
+    },
+    {
+      "id": "opt_soporte",
+      "key": "6",
+      "label": "Soporte y cambios",
+      "intent": "support",
+      "response": "",
+      "flowId": "flow_soporte",
+      "notifyHuman": true,
+      "mediaId": null
+    },
+    {
+      "id": "opt_asesor",
+      "key": "7",
+      "label": "Hablar con asesor",
+      "intent": "asesor",
+      "response": "👤 *Conectando con un asesor...*\n\nUn miembro de nuestro equipo te atenderá pronto.\n⏰ Horario de atención: {{SUPPORT_HOURS}}\n\nSi es urgente, también puedes contactarnos en:\n📸 Instagram: {{INSTAGRAM_URL}}",
+      "flowId": null,
+      "notifyHuman": true,
+      "mediaId": null
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow_comprar",
+      "name": "Flujo de Compra",
+      "completionMessage": "✅ *¡Pedido recibido!*\n\nUn asesor revisará tu pedido y te confirmará disponibilidad y datos de pago en breve.\n⏰ Tiempo de respuesta: {{SUPPORT_HOURS}}\n\n¡Gracias por comprar en {{STORE_NAME}}! 👟🔥",
+      "createTicket": true,
+      "steps": [
+        {
+          "id": "s1",
+          "title": "Modelo y talla",
+          "message": "🛒 *Proceso de compra*\n\n¿Qué modelo y talla te interesa?\n\nEjemplo: _Nike Air Force 1 talla 27 blanco_\n\n💡 Si no estás seguro de tu talla, escribe *tallas* para ver la guía.",
+          "inputType": "text",
+          "varName": "modelo_talla"
+        },
+        {
+          "id": "s2",
+          "title": "Nombre del cliente",
+          "message": "👤 ¿Cuál es tu nombre completo?",
+          "inputType": "text",
+          "varName": "nombre_cliente"
+        },
+        {
+          "id": "s3",
+          "title": "Tipo de entrega",
+          "message": "📦 ¿Cómo prefieres recibir tu pedido?",
+          "inputType": "choice",
+          "varName": "tipo_entrega",
+          "choices": [
+            { "key": "1", "label": "Envío a domicilio 🚚" },
+            { "key": "2", "label": "Recoger en tienda 🏪" }
+          ]
+        },
+        {
+          "id": "s4",
+          "title": "Dirección de envío",
+          "message": "📍 Por favor escribe tu dirección completa de entrega:\n_(Calle, número, colonia, ciudad, CP)_\n\n💡 Costo de envío: {{SHIPPING_COST}}\nTiempo estimado: {{SHIPPING_DAYS}}",
+          "inputType": "text",
+          "varName": "direccion",
+          "condition": { "varName": "tipo_entrega", "value": "Envío a domicilio 🚚" }
+        },
+        {
+          "id": "s5",
+          "title": "Método de pago",
+          "message": "💳 ¿Cómo deseas pagar?",
+          "inputType": "choice",
+          "varName": "metodo_pago",
+          "choices": [
+            { "key": "1", "label": "Transferencia bancaria 🏦" },
+            { "key": "2", "label": "Mercado Pago 💳" },
+            { "key": "3", "label": "OXXO Pay 🟡" },
+            { "key": "4", "label": "Pago en tienda 🏪" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flow_seguimiento",
+      "name": "Seguimiento de Pedido",
+      "completionMessage": "🔍 Tu consulta fue enviada a nuestro equipo. Te responderemos a la brevedad.\n\n¡Gracias por tu paciencia! 🙏",
+      "createTicket": true,
+      "steps": [
+        {
+          "id": "s1",
+          "title": "Número de pedido",
+          "message": "📦 *Seguimiento de tu pedido*\n\nPor favor escribe el número de pedido o el nombre con el que realizaste la compra.\n\nEjemplo: _#1234_ o _Juan Pérez_",
+          "inputType": "text",
+          "varName": "referencia_pedido"
+        }
+      ]
+    },
+    {
+      "id": "flow_soporte",
+      "name": "Soporte y Cambios",
+      "completionMessage": "✅ Tu solicitud fue registrada. Un asesor te contactará pronto.\n\n⏰ Horario: {{SUPPORT_HOURS}}\n\n🔄 Política de cambios: {{RETURN_POLICY}}",
+      "createTicket": true,
+      "steps": [
+        {
+          "id": "s1",
+          "title": "Tipo de problema",
+          "message": "🛠️ *Soporte y cambios*\n\n¿En qué podemos ayudarte?",
+          "inputType": "choice",
+          "varName": "tipo_soporte",
+          "choices": [
+            { "key": "1", "label": "Cambio de talla o modelo 🔄" },
+            { "key": "2", "label": "Producto defectuoso ⚠️" },
+            { "key": "3", "label": "Problema con mi pago 💳" },
+            { "key": "4", "label": "Mi pedido no ha llegado 📦" },
+            { "key": "5", "label": "Otro 💬" }
+          ]
+        },
+        {
+          "id": "s2",
+          "title": "Descripción del problema",
+          "message": "📝 Por favor describe tu situación con detalle.\n\nIncluye el número de pedido si tienes uno.",
+          "inputType": "text",
+          "varName": "descripcion_problema"
+        }
+      ]
+    }
+  ]
+}

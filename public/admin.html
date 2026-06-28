@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VpnMax Bot - Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #1a1a1a; }
+
+  /* Login */
+  #login-overlay {
+    position: fixed; inset: 0; background: #f0f2f5;
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  }
+  .login-box {
+    background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.1);
+    width: 90%; max-width: 360px; text-align: center;
+  }
+  .login-box h2 { margin-bottom: 1rem; color: #075e54; }
+  .login-box input {
+    width: 100%; padding: .75rem; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 1rem; margin-bottom: 1rem;
+  }
+  .login-box button {
+    width: 100%; padding: .75rem; background: #075e54; color: #fff;
+    border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;
+  }
+  .login-box button:hover { background: #064e46; }
+  .login-error { color: #e53e3e; font-size: .875rem; margin-bottom: .5rem; display: none; }
+
+  /* Header */
+  header {
+    background: #075e54; color: #fff; padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 1.25rem; }
+  #btn-logout {
+    background: rgba(255,255,255,.2); border: none; color: #fff;
+    padding: .4rem .8rem; border-radius: 6px; cursor: pointer; font-size: .8rem;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; background: #fff; border-bottom: 2px solid #e2e8f0;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    flex: 1; min-width: 120px; padding: .75rem .5rem; border: none; background: none;
+    cursor: pointer; font-size: .9rem; color: #666; border-bottom: 3px solid transparent;
+    white-space: nowrap; transition: all .2s;
+  }
+  .tab-btn.active { color: #075e54; border-bottom-color: #075e54; font-weight: 600; }
+  .tab-panel { display: none; padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+
+  /* Forms */
+  label { display: block; font-weight: 600; margin: .75rem 0 .25rem; font-size: .875rem; }
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%; padding: .6rem; border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: .9rem; font-family: inherit;
+  }
+  textarea { min-height: 250px; resize: vertical; }
+  .btn {
+    display: inline-block; padding: .6rem 1.2rem; border: none; border-radius: 8px;
+    cursor: pointer; font-size: .9rem; font-weight: 600; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: #075e54; color: #fff; }
+  .btn-danger { background: #e53e3e; color: #fff; }
+  .btn-secondary { background: #e2e8f0; color: #333; }
+  .btn-sm { padding: .35rem .7rem; font-size: .8rem; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; background: #075e54; color: #fff;
+    padding: .75rem 1.25rem; border-radius: 8px; font-size: .9rem;
+    transform: translateY(100px); opacity: 0; transition: all .3s; z-index: 999;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Knowledge table */
+  .kb-list { margin-top: 1rem; }
+  .kb-item {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 1rem; margin-bottom: .75rem;
+  }
+  .kb-item.disabled { opacity: .5; }
+  .kb-header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .kb-category { background: #e2e8f0; padding: .15rem .5rem; border-radius: 4px; font-size: .75rem; }
+  .kb-question { font-weight: 600; margin: .5rem 0 .25rem; }
+  .kb-answer { color: #555; font-size: .9rem; }
+  .kb-actions { display: flex; gap: .4rem; margin-top: .5rem; }
+
+  /* Flow cards */
+  .flow-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 1rem; margin-bottom: .75rem;
+  }
+  .flow-card-header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .flow-card-title { font-weight: 600; }
+  .flow-card-subtitle { font-size: .85rem; color: #666; margin-top: .25rem; }
+  .flow-card-actions { display: flex; gap: .4rem; margin-top: .5rem; }
+  .flow-step-item {
+    background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: .75rem; margin-bottom: .5rem; position: relative;
+  }
+  .flow-step-item .step-num {
+    position: absolute; top: .5rem; left: .5rem; background: #075e54; color: #fff;
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: .7rem; font-weight: 700;
+  }
+  .flow-step-item .step-body { margin-left: 2rem; }
+  .flow-step-actions { display: flex; gap: .3rem; margin-top: .4rem; }
+  .choices-list { margin-top: .4rem; }
+  .choice-row { display: flex; gap: .4rem; align-items: center; margin-bottom: .3rem; flex-wrap: wrap; }
+  .choice-row input { width: auto; flex: 1; min-width: 60px; }
+  .section-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .section-box h3 { margin-bottom: .75rem; color: #075e54; }
+  .config-var {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: .75rem 1rem; margin-bottom: .5rem;
+  }
+  .config-var-header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+  .config-var-key { font-weight: 600; font-size: .85rem; color: #075e54; font-family: monospace; }
+  .config-var-label { font-size: .8rem; color: #888; }
+  .config-var input, .config-var textarea { margin-top: .35rem; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    display: none; align-items: center; justify-content: center; z-index: 500;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 500px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal.modal-wide { max-width: 650px; }
+  .modal h3 { margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
+
+  /* Logs */
+  .log-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .log-table th, .log-table td { text-align: left; padding: .5rem; border-bottom: 1px solid #e2e8f0; }
+  .log-table th { background: #f7fafc; position: sticky; top: 0; }
+  .log-wrap { max-height: 70vh; overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
+  .log-intent { background: #ebf8ff; padding: .1rem .4rem; border-radius: 4px; font-size: .75rem; }
+  .msg-cell { cursor: pointer; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-cell:hover { background: #f7fafc; }
+  .msg-cell[data-expanded="1"] { white-space: pre-wrap; max-width: 420px; }
+  .log-controls { display: flex; gap: .5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+
+  /* Tickets */
+  .ticket-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 1rem; margin-bottom: .75rem;
+  }
+  .ticket-card.closed { opacity: .6; }
+  .ticket-open { display: inline-block; background: #f6e05e; color: #744210; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .ticket-closed { display: inline-block; background: #c6f6d5; color: #22543d; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .ticket-vars { font-size: .85rem; color: #555; margin: .5rem 0; }
+  .ticket-vars span { display: block; margin-bottom: .15rem; }
+  .ticket-meta { font-size: .75rem; color: #999; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .75rem; margin-bottom: 1rem;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: .75rem; text-align: center;
+  }
+  .stat-value { font-size: 1.5rem; font-weight: 700; color: #075e54; }
+  .stat-label { font-size: .75rem; color: #888; margin-top: .15rem; }
+  .intent-bar-wrap { margin-bottom: .35rem; }
+  .intent-bar-header { display: flex; justify-content: space-between; font-size: .8rem; margin-bottom: .15rem; }
+  .intent-bar { height: 20px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+  .intent-bar-fill { height: 100%; background: #075e54; border-radius: 4px; transition: width .3s; }
+  .chart-bar-row { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+  .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .chart-bar { width: 100%; background: #075e54; border-radius: 3px 3px 0 0; min-height: 2px; transition: height .3s; }
+  .chart-bar-label { font-size: .6rem; color: #888; margin-top: .2rem; writing-mode: horizontal-tb; }
+
+  /* Media cards */
+  .media-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 1rem; margin-bottom: .75rem;
+  }
+  .media-badge {
+    display: inline-block; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600;
+  }
+  .media-badge.image { background: #bee3f8; color: #2a4365; }
+  .media-badge.video { background: #fefcbf; color: #744210; }
+  .media-badge.document { background: #c6f6d5; color: #22543d; }
+
+  /* Transfer badges */
+  .transfer-pending { display: inline-block; background: #fbd38d; color: #744210; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .transfer-verified { display: inline-block; background: #c6f6d5; color: #22543d; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .transfer-rejected { display: inline-block; background: #fed7d7; color: #9b2c2c; padding: .1rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .receipt-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; }
+  .receipt-thumb:hover { opacity: .8; }
+
+  /* Broadcast audience cards */
+  .bc-audience-card {
+    display:flex; flex-direction:column; gap:.25rem;
+    background:#fff; border:2px solid #e2e8f0; border-radius:10px;
+    padding:.85rem 1rem; cursor:pointer; transition:border-color .2s;
+  }
+  .bc-audience-card:hover { border-color:#128c7e; }
+  .bc-audience-card.selected { border-color:#075e54; background:#f0fdf4; }
+  .bc-audience-card .bc-count { font-size:1.4rem; font-weight:700; color:#075e54; }
+  .bc-audience-card small { color:#888; font-size:.75rem; }
+
+  /* Purchases toggle */
+  .purchases-toggle-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: #fff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .purchases-toggle-card.disabled { border-color: #fc8181; background: #fff5f5; }
+  .purchases-toggle-card .toggle-info strong { font-size: 1rem; }
+  .purchases-toggle-card .toggle-info p { font-size: .82rem; color: #666; margin-top: .2rem; }
+  .purchases-toggle-card.disabled .toggle-info p { color: #c53030; }
+  .toggle-switch { position: relative; display: inline-block; width: 52px; height: 28px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #cbd5e0; border-radius: 28px; transition: .3s;
+  }
+  .toggle-slider:before {
+    content: ''; position: absolute; width: 22px; height: 22px;
+    left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s;
+  }
+  .toggle-switch input:checked + .toggle-slider { background: #075e54; }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+
+  @media (max-width: 600px) {
+    .tab-btn { font-size: .8rem; min-width: 90px; padding: .6rem .3rem; }
+    .tab-panel { padding: 1rem; }
+    .log-table { font-size: .75rem; }
+    .log-table th, .log-table td { padding: .35rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>VpnMax Admin</h2>
+    <p class="login-error" id="login-error">Contraseña incorrecta</p>
+    <input type="password" id="login-pass" placeholder="Contraseña" autofocus>
+    <button onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" style="display:none">
+  <header>
+    <h1>VpnMax Bot - Admin</h1>
+    <button id="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="config">Configuración</button>
+    <button class="tab-btn" data-tab="flows">Flujo del Bot</button>
+    <button class="tab-btn" data-tab="tickets">Tickets</button>
+    <button class="tab-btn" data-tab="media">Multimedia</button>
+    <button class="tab-btn" data-tab="prompt">Prompt</button>
+    <button class="tab-btn" data-tab="knowledge">Base de Conocimiento</button>
+    <button class="tab-btn" data-tab="transfers">Transferencias</button>
+    <button class="tab-btn" data-tab="banks">Bancos</button>
+    <button class="tab-btn" data-tab="logs">Conversaciones</button>
+    <button class="tab-btn" data-tab="funnel">Embudo</button>
+    <button class="tab-btn" data-tab="broadcast">Broadcast</button>
+    <button class="tab-btn" data-tab="ratings">Calificaciones ⭐</button>
+  </div>
+
+  <!-- Config tab -->
+  <div class="tab-panel active" id="tab-config">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Configuración</h2>
+      <button class="btn btn-primary" onclick="saveConfig()">Guardar Configuración</button>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0">Cada variable se puede usar como <code>{{NOMBRE}}</code> en prompts, respuestas y flujos.</p>
+
+    <div class="purchases-toggle-card" id="purchases-toggle-card">
+      <div class="toggle-info">
+        <strong>Compras y Pagos</strong>
+        <p id="purchases-toggle-desc">Activo — los usuarios pueden comprar planes desde el bot.</p>
+      </div>
+      <label class="toggle-switch" title="Activar/desactivar compras">
+        <input type="checkbox" id="toggle-purchases" checked onchange="onPurchasesToggle()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="purchases-toggle-card" id="register-toggle-card">
+      <div class="toggle-info">
+        <strong>Crear Cuenta (por el bot)</strong>
+        <p id="register-toggle-desc">Activo — los usuarios pueden crear su cuenta desde el bot.</p>
+      </div>
+      <label class="toggle-switch" title="Activar/desactivar registro por bot">
+        <input type="checkbox" id="toggle-register" checked onchange="onRegisterToggle()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="purchases-toggle-card" id="subscribe-toggle-card">
+      <div class="toggle-info">
+        <strong>Consultar Suscripción (por el bot)</strong>
+        <p id="subscribe-toggle-desc">Activo — los usuarios pueden consultar su suscripción desde el bot.</p>
+      </div>
+      <label class="toggle-switch" title="Activar/desactivar consulta de suscripción">
+        <input type="checkbox" id="toggle-subscribe" checked onchange="onSubscribeToggle()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="purchases-toggle-card" id="rating-toggle-card">
+      <div class="toggle-info">
+        <strong>Campaña: Gana $30 calificando la app ⭐</strong>
+        <p id="rating-toggle-desc">Desactivado — la opción no aparece en el menú.</p>
+      </div>
+      <label class="toggle-switch" title="Activar/desactivar campaña de calificaciones">
+        <input type="checkbox" id="toggle-rating" onchange="onRatingToggle()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div id="config-fields"></div>
+    <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="addConfigVar()">+ Agregar Variable</button>
+      <button class="btn btn-primary" onclick="saveConfig()">Guardar Configuración</button>
+    </div>
+  </div>
+
+  <!-- Flows tab -->
+  <div class="tab-panel" id="tab-flows">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+      <h2>Flujo del Bot</h2>
+      <button class="btn btn-primary" onclick="saveAllFlows()">Guardar Todo</button>
+    </div>
+
+    <!-- Menu section -->
+    <div class="section-box">
+      <h3>Menú Principal</h3>
+      <label>Mensaje de bienvenida (nuevos usuarios)</label>
+      <textarea id="flow-welcome" style="min-height:100px" placeholder="¡Bienvenido! Este mensaje se envía una sola vez al primer contacto del usuario..."></textarea>
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Se muestra una sola vez, seguido del menú completo. Soporta <code>{{PLACEHOLDERS}}</code>. Déjalo vacío para no mostrar bienvenida.</p>
+
+      <label>Triggers (separados por coma)</label>
+      <input type="text" id="flow-triggers" placeholder="hola, menu, menú, inicio...">
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Palabras que activan el menú</p>
+
+      <label>Cooldown (ms)</label>
+      <input type="number" id="flow-cooldown" placeholder="120000">
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Tiempo antes de mostrar el menú completo otra vez</p>
+
+      <label>Cabecera del menú</label>
+      <textarea id="flow-menu-header" style="min-height:60px" placeholder="*VpnMax* - Internet sin saldo" oninput="updateMenuPreview()"></textarea>
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Texto que aparece antes de las opciones</p>
+
+      <label>Pie del menú</label>
+      <input type="text" id="flow-menu-footer" placeholder="Responde con el *número* de la opción." oninput="updateMenuPreview()">
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Texto que aparece después de las opciones</p>
+
+      <label>Mensaje menú corto</label>
+      <input type="text" id="flow-short-header" placeholder="¿En qué te ayudo?" oninput="updateMenuPreview()">
+      <p style="font-size:.75rem;color:#888;margin-top:.25rem">Encabezado cuando se repite el menú (las opciones se generan en línea)</p>
+
+      <label>Vista previa</label>
+      <div id="menu-preview" style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:.75rem;font-size:.85rem;white-space:pre-wrap;font-family:inherit;color:#1a1a1a"></div>
+      <div id="short-menu-preview" style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:8px;padding:.75rem;font-size:.85rem;white-space:pre-wrap;font-family:inherit;color:#1a1a1a;margin-top:.5rem"></div>
+    </div>
+
+    <!-- Options section -->
+    <div class="section-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <h3>Opciones del Menú</h3>
+        <button class="btn btn-secondary btn-sm" onclick="openOptionModal()">+ Agregar Opción</button>
+      </div>
+      <div id="options-list" style="margin-top:.75rem"></div>
+    </div>
+
+    <!-- Flows section -->
+    <div class="section-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <h3>Flujos Multi-paso</h3>
+        <button class="btn btn-secondary btn-sm" onclick="openFlowModal()">+ Agregar Flujo</button>
+      </div>
+      <div id="flows-list" style="margin-top:.75rem"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveAllFlows()">Guardar Todo</button>
+  </div>
+
+  <!-- Tickets tab -->
+  <div class="tab-panel" id="tab-tickets">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+      <h2>Tickets de Soporte</h2>
+      <button class="btn btn-secondary" onclick="loadTickets()">Actualizar</button>
+    </div>
+    <div class="log-controls">
+      <label style="margin:0;font-size:.85rem">Filtrar:</label>
+      <select id="ticket-filter" onchange="renderTickets()" style="width:auto">
+        <option value="all">Todos</option>
+        <option value="open">Abiertos</option>
+        <option value="closed">Cerrados</option>
+      </select>
+    </div>
+    <div id="tickets-list" style="margin-top:.75rem"></div>
+  </div>
+
+  <!-- Media tab -->
+  <div class="tab-panel" id="tab-media">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Biblioteca Multimedia</h2>
+      <button class="btn btn-primary" onclick="openMediaModal()">+ Agregar Media</button>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0">Imágenes, videos y documentos que se pueden adjuntar a opciones y flujos.</p>
+    <div id="media-list" style="margin-top:.75rem"></div>
+  </div>
+
+  <!-- Prompt tab -->
+  <div class="tab-panel" id="tab-prompt">
+    <h2>System Prompt</h2>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0" id="prompt-placeholders">
+      Placeholders disponibles se cargan de la tab Configuración.
+    </p>
+    <textarea id="prompt-text"></textarea>
+    <br><br>
+    <button class="btn btn-primary" onclick="savePrompt()">Guardar Prompt</button>
+  </div>
+
+  <!-- Knowledge tab -->
+  <div class="tab-panel" id="tab-knowledge">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Base de Conocimiento</h2>
+      <button class="btn btn-primary" onclick="openKBModal()">+ Agregar FAQ</button>
+    </div>
+    <div class="kb-list" id="kb-list"></div>
+  </div>
+
+  <!-- Transfers tab -->
+  <div class="tab-panel" id="tab-transfers">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+      <h2>Transferencias</h2>
+      <button class="btn btn-secondary" onclick="loadTransfers()">Actualizar</button>
+    </div>
+    <div class="log-controls">
+      <label style="margin:0;font-size:.85rem">Filtrar:</label>
+      <select id="transfer-filter" onchange="renderTransfers()" style="width:auto">
+        <option value="all">Todas</option>
+        <option value="pending" selected>Pendientes</option>
+        <option value="verified">Verificadas</option>
+        <option value="rejected">Rechazadas</option>
+      </select>
+    </div>
+    <div id="transfers-list" style="margin-top:.75rem"></div>
+  </div>
+
+  <!-- Banks tab -->
+  <div class="tab-panel" id="tab-banks">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Cuentas Bancarias</h2>
+      <button class="btn btn-primary" onclick="openBankModal()">+ Agregar Cuenta</button>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0">Cuentas para pago por transferencia. Solo las activas se muestran al usuario.</p>
+    <div id="bank-list" style="margin-top:.75rem"></div>
+  </div>
+
+  <!-- Logs tab -->
+  <div class="tab-panel" id="tab-logs">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Conversaciones</h2>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-secondary btn-sm" onclick="loadLogs()">Actualizar</button>
+        <button class="btn btn-danger btn-sm" onclick="clearLogs()">Limpiar todo</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div id="log-stats" style="margin-top:1rem"></div>
+
+    <div class="log-controls" style="margin-top:1rem">
+      <label style="margin:0;font-size:.85rem">Mostrar últimas:</label>
+      <select id="log-limit" onchange="loadLogs()" style="width:auto">
+        <option value="25">25</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+        <option value="2000">2000</option>
+        <option value="5000">5000</option>
+      </select>
+    </div>
+    <div class="log-wrap">
+      <table class="log-table">
+        <thead><tr><th>Fecha</th><th>De</th><th>Mensaje</th><th>Respuesta</th><th>Intent</th></tr></thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Broadcast tab -->
+  <div class="tab-panel" id="tab-broadcast">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Broadcast</h2>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0 1.25rem">Envía un mensaje a múltiples usuarios. Usa la audiencia <strong>Activos 24h</strong> para mensajes fuera de plantilla (gratis). Para otras audiencias necesitas una plantilla HSM aprobada por Meta.</p>
+
+    <div class="section-box">
+      <label>Mensaje</label>
+      <textarea id="bc-message" style="min-height:120px" placeholder="Escribe el mensaje que recibirán los usuarios..."></textarea>
+
+      <label style="margin-top:1rem">Audiencia</label>
+      <div id="bc-audience-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-top:.5rem">
+        <label class="bc-audience-card selected" data-val="all">
+          <input type="radio" name="bc-audience" value="all" checked style="display:none">
+          <strong>Todos</strong>
+          <span id="bc-count-all" class="bc-count">—</span>
+          <small>Historial completo</small>
+        </label>
+        <label class="bc-audience-card" data-val="active_24h">
+          <input type="radio" name="bc-audience" value="active_24h" style="display:none">
+          <strong>Activos 24h ✅</strong>
+          <span id="bc-count-active_24h" class="bc-count">—</span>
+          <small>Mensaje libre (sin plantilla)</small>
+        </label>
+        <label class="bc-audience-card" data-val="active_7d">
+          <input type="radio" name="bc-audience" value="active_7d" style="display:none">
+          <strong>Activos 7 días</strong>
+          <span id="bc-count-active_7d" class="bc-count">—</span>
+          <small>Requiere plantilla HSM fuera de 24h</small>
+        </label>
+        <label class="bc-audience-card" data-val="no_purchase">
+          <input type="radio" name="bc-audience" value="no_purchase" style="display:none">
+          <strong>Sin compra</strong>
+          <span id="bc-count-no_purchase" class="bc-count">—</span>
+          <small>Nunca enviaron comprobante</small>
+        </label>
+      </div>
+
+      <div style="margin-top:1.25rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="sendBroadcast()" id="bc-send-btn">Enviar Broadcast</button>
+        <span id="bc-status" style="font-size:.85rem;color:#555"></span>
+      </div>
+    </div>
+
+    <div class="section-box" id="bc-progress-box" style="display:none">
+      <h3 style="margin-bottom:.75rem">Progreso</h3>
+      <div id="bc-progress-bar-wrap" style="background:#e2e8f0;border-radius:6px;height:18px;overflow:hidden;margin-bottom:.5rem">
+        <div id="bc-progress-bar" style="background:#075e54;height:100%;width:0%;transition:width .5s;border-radius:6px"></div>
+      </div>
+      <p id="bc-progress-text" style="font-size:.85rem;color:#555;margin:0"></p>
+    </div>
+  </div>
+
+  <!-- Embudo tab -->
+  <div class="tab-panel" id="tab-ratings">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+      <h2>Calificaciones ⭐</h2>
+      <button class="btn btn-secondary btn-sm" onclick="loadRatings()">Actualizar</button>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0 1rem">Usuarios que enviaron evidencia de calificación. El saldo se acredita automáticamente al completar el flujo.</p>
+    <div class="log-wrap">
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <thead><tr style="background:#f7fafc">
+          <th style="padding:.5rem;text-align:left">Fecha</th>
+          <th style="padding:.5rem;text-align:left">Número</th>
+          <th style="padding:.5rem;text-align:left">Correo</th>
+          <th style="padding:.5rem;text-align:left">Captura</th>
+          <th style="padding:.5rem;text-align:left">Estado</th>
+          <th style="padding:.5rem;text-align:left">Acciones</th>
+        </tr></thead>
+        <tbody id="ratings-body"><tr><td colspan="6" style="text-align:center;padding:1rem;color:#999">Sin calificaciones aún</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-funnel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h2>Embudo de Conversión</h2>
+      <button class="btn btn-secondary btn-sm" onclick="loadFunnel()">Actualizar</button>
+    </div>
+    <p style="font-size:.85rem;color:#666;margin:.5rem 0 1.25rem">Usuarios únicos por etapa. Los porcentajes son relativos al total de llegados.</p>
+    <div id="funnel-chart"></div>
+  </div>
+</div>
+
+<!-- KB Modal -->
+<div class="modal-overlay" id="kb-modal">
+  <div class="modal">
+    <h3 id="kb-modal-title">Agregar FAQ</h3>
+    <input type="hidden" id="kb-edit-id">
+    <label>Categoría</label>
+    <input type="text" id="kb-category" placeholder="ej. General, Técnico, Pagos">
+    <label>Pregunta</label>
+    <input type="text" id="kb-question" placeholder="¿Cómo descargo la app?">
+    <label>Respuesta</label>
+    <textarea id="kb-answer" style="min-height:120px" placeholder="La respuesta a la pregunta..."></textarea>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem" id="kb-placeholders"></p>
+    <label><input type="checkbox" id="kb-enabled" checked> Habilitada</label>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeKBModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveKB()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Option Modal -->
+<div class="modal-overlay" id="option-modal">
+  <div class="modal">
+    <h3 id="option-modal-title">Agregar Opción</h3>
+    <input type="hidden" id="opt-edit-idx" value="-1">
+    <label>Tecla (ej. 1, 2, 5)</label>
+    <input type="text" id="opt-key" placeholder="1">
+    <label>Etiqueta</label>
+    <input type="text" id="opt-label" placeholder="Cómo funciona">
+    <label>Intent</label>
+    <input type="text" id="opt-intent" placeholder="how">
+    <label>Respuesta</label>
+    <textarea id="opt-response" style="min-height:100px" placeholder="Texto con {{PLACEHOLDERS}}..."></textarea>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem" id="opt-placeholders">Placeholders disponibles se cargan de Configuración.</p>
+    <label>Flujo asociado (opcional)</label>
+    <select id="opt-flowId"><option value="">— Ninguno —</option></select>
+    <label style="margin-top:.75rem"><input type="checkbox" id="opt-notify-human"> Notificar al asesor</label>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem">Se enviará un aviso por Telegram (o HUMAN_WA como fallback) cuando alguien elija esta opción</p>
+    <label>Media adjunto (opcional)</label>
+    <select id="opt-mediaId"><option value="">— Ninguno —</option></select>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem">Se enviará imagen/video/documento junto a la respuesta</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeOptionModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveOption()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flow Modal -->
+<div class="modal-overlay" id="flow-modal">
+  <div class="modal modal-wide">
+    <h3 id="flow-modal-title">Agregar Flujo</h3>
+    <input type="hidden" id="fl-edit-idx" value="-1">
+    <label>Nombre del Flujo</label>
+    <input type="text" id="fl-name" placeholder="Soporte Técnico">
+    <label>ID del Flujo</label>
+    <input type="text" id="fl-id" placeholder="support_flow">
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem">Identificador único (sin espacios)</p>
+    <label style="margin-top:.75rem"><input type="checkbox" id="fl-create-ticket"> Crear ticket al completar este flujo</label>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem">Se enviará un resumen por WhatsApp al asesor y se mostrará en la tab Tickets</p>
+
+    <label>Pasos</label>
+    <div id="fl-steps"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addStepToModal()" style="margin-top:.5rem">+ Agregar Paso</button>
+
+    <label>Mensaje de finalización</label>
+    <textarea id="fl-completion" style="min-height:80px" placeholder="Resumen:\n*Campo:* {{variable}}..."></textarea>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem" id="fl-placeholders">Usa {{varName}} para las variables del flujo y {{CONFIG_KEY}} para config</p>
+
+    <label>Media al completar (opcional)</label>
+    <select id="fl-completion-media"><option value="">— Ninguno —</option></select>
+    <p style="font-size:.75rem;color:#888;margin-top:.25rem">Se enviará imagen/video/documento al finalizar el flujo</p>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFlowModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFlow()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Media Modal -->
+<div class="modal-overlay" id="media-modal">
+  <div class="modal">
+    <h3 id="media-modal-title">Agregar Media</h3>
+    <input type="hidden" id="media-edit-id">
+    <label>Nombre</label>
+    <input type="text" id="media-name" placeholder="ej. App Android Screenshot">
+    <label>Tipo</label>
+    <select id="media-type">
+      <option value="image">Imagen</option>
+      <option value="video">Video</option>
+      <option value="document">Documento</option>
+    </select>
+    <label>URL</label>
+    <input type="text" id="media-url" placeholder="https://...">
+    <label>Caption (opcional)</label>
+    <input type="text" id="media-caption" placeholder="Texto que acompaña al media">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeMediaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMedia()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bank Modal -->
+<div class="modal-overlay" id="bank-modal">
+  <div class="modal">
+    <h3 id="bank-modal-title">Agregar Cuenta</h3>
+    <input type="hidden" id="bank-edit-id">
+    <label>Banco</label>
+    <input type="text" id="bank-banco" placeholder="ej. BBVA, Banorte, HSBC">
+    <label>A nombre de</label>
+    <input type="text" id="bank-titular" placeholder="ej. Juan Pérez">
+    <label>Cuenta SPEI / CLABE / Tarjeta</label>
+    <input type="text" id="bank-cuenta" placeholder="ej. 012345678901234567">
+    <label>Descripción (opcional)</label>
+    <input type="text" id="bank-descripcion" placeholder="ej. Solo depósitos en efectivo en sucursal">
+    <label style="margin-top:.75rem"><input type="checkbox" id="bank-tarjeta"> Es tarjeta (en vez de cuenta/CLABE)</label>
+    <label style="margin-top:.5rem"><input type="checkbox" id="bank-activa" checked> Activa</label>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeBankModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBank()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/admin/api';
+let password = localStorage.getItem('admin_pass') || '';
+
+// --- Auth ---
+function authHeaders() {
+  return { 'Authorization': 'Basic ' + btoa('admin:' + password), 'Content-Type': 'application/json' };
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: authHeaders() };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  if (res.status === 401) { doLogout(); throw new Error('No autorizado'); }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error del servidor');
+  return data;
+}
+
+async function doLogin() {
+  const pass = document.getElementById('login-pass').value;
+  if (!pass) return;
+  password = pass;
+  try {
+    await api('GET', '/config');
+    localStorage.setItem('admin_pass', pass);
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    loadAll();
+  } catch {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  password = '';
+  localStorage.removeItem('admin_pass');
+  document.getElementById('login-overlay').style.display = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// Auto-login if saved password
+(async () => {
+  if (password) {
+    try {
+      await api('GET', '/config');
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app').style.display = '';
+      loadAll();
+    } catch { doLogout(); }
+  }
+})();
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// --- Tabs ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'logs') loadLogs();
+    if (btn.dataset.tab === 'funnel') loadFunnel();
+    if (btn.dataset.tab === 'broadcast') loadBroadcastAudiences();
+    if (btn.dataset.tab === 'ratings') loadRatings();
+  });
+});
+
+// --- Toast ---
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// --- Load all ---
+function loadAll() { loadConfig(); loadPrompt(); loadKB(); loadLogs(); loadFlows(); loadTickets(); loadMedia(); loadBanks(); loadTransfers(); }
+
+// --- Broadcast ---
+async function loadBroadcastAudiences() {
+  const counts = await api('GET', '/broadcast/audiences');
+  for (const [key, val] of Object.entries(counts)) {
+    const el = document.getElementById('bc-count-' + key);
+    if (el) el.textContent = val;
+  }
+}
+
+document.querySelectorAll('.bc-audience-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.bc-audience-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    card.querySelector('input[type=radio]').checked = true;
+  });
+});
+
+let bcPollInterval = null;
+
+async function sendBroadcast() {
+  const message = document.getElementById('bc-message').value.trim();
+  if (!message) { toast('Escribe un mensaje primero'); return; }
+  const audience = document.querySelector('input[name="bc-audience"]:checked')?.value || 'all';
+  const countEl = document.getElementById('bc-count-' + audience);
+  const total = parseInt(countEl?.textContent) || 0;
+  if (total === 0) { toast('No hay destinatarios en esta audiencia'); return; }
+  if (!confirm(`¿Enviar a ${total} usuario(s)?`)) return;
+
+  const btn = document.getElementById('bc-send-btn');
+  btn.disabled = true;
+  document.getElementById('bc-status').textContent = 'Iniciando...';
+
+  try {
+    const result = await api('POST', '/broadcast', { message, audience });
+    document.getElementById('bc-progress-box').style.display = '';
+    document.getElementById('bc-status').textContent = `Enviando ${result.queued} mensajes...`;
+    pollBroadcastStatus(result.queued);
+  } catch (e) {
+    document.getElementById('bc-status').textContent = 'Error: ' + (e.message || 'desconocido');
+    btn.disabled = false;
+  }
+}
+
+function pollBroadcastStatus(total) {
+  if (bcPollInterval) clearInterval(bcPollInterval);
+  bcPollInterval = setInterval(async () => {
+    const s = await api('GET', '/broadcast/status');
+    const done = s.sent + s.failed;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('bc-progress-bar').style.width = pct + '%';
+    document.getElementById('bc-progress-text').textContent =
+      `Enviados: ${s.sent} · Fallidos: ${s.failed} · Total: ${total}`;
+    if (s.state === 'done') {
+      clearInterval(bcPollInterval);
+      document.getElementById('bc-status').textContent = `✅ Broadcast completado — ${s.sent} enviados, ${s.failed} fallidos`;
+      document.getElementById('bc-send-btn').disabled = false;
+      document.getElementById('bc-progress-bar').style.width = '100%';
+    }
+  }, 2000);
+}
+
+// --- Funnel ---
+async function loadFunnel() {
+  const data = await api('GET', '/funnel');
+  const { stats, sources } = data;
+  const total = stats[0]?.count || 0;
+  const container = document.getElementById('funnel-chart');
+  if (!stats.length || total === 0) {
+    container.innerHTML = '<p style="color:#999;font-size:.9rem">Aún no hay datos de embudo.</p>';
+    return;
+  }
+  const colors = ['#075e54','#128c7e','#25d366','#34c759','#ff9500','#ff3b30'];
+  const bars = stats.map((s, i) => {
+    const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
+    const barW = total > 0 ? Math.max((s.count / total) * 100, s.count > 0 ? 2 : 0) : 0;
+    return `<div style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.3rem">
+        <span><strong>${s.label}</strong></span>
+        <span style="color:#555">${s.count} usuarios${i > 0 ? ' · ' + pct + '%' : ''}</span>
+      </div>
+      <div style="background:#e2e8f0;border-radius:6px;height:22px;overflow:hidden">
+        <div style="background:${colors[i % colors.length]};width:${barW}%;height:100%;border-radius:6px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  let sourcesHtml = '';
+  if (sources && sources.length > 0) {
+    const rows = sources.map(s => {
+      const conv = s.arrived > 0 ? ((s.purchased / s.arrived) * 100).toFixed(1) : '0.0';
+      const isAd = s.ref !== 'Orgánico';
+      return `<tr>
+        <td><span style="background:${isAd ? '#ebf8ff' : '#f0fff4'};color:${isAd ? '#2b6cb0' : '#276749'};padding:.1rem .5rem;border-radius:4px;font-size:.8rem;font-weight:600">${esc(s.ref)}</span></td>
+        <td style="text-align:center">${s.arrived}</td>
+        <td style="text-align:center">${s.purchased}</td>
+        <td style="text-align:center;font-weight:600;color:${parseFloat(conv) >= 10 ? '#276749' : '#744210'}">${conv}%</td>
+      </tr>`;
+    }).join('');
+    sourcesHtml = `<h3 style="margin:1.5rem 0 .75rem;font-size:.95rem">Por fuente de anuncio</h3>
+    <table class="log-table" style="width:100%">
+      <thead><tr><th>Fuente (ref)</th><th style="text-align:center">Llegaron</th><th style="text-align:center">Compraron</th><th style="text-align:center">Conversión</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  container.innerHTML = bars + sourcesHtml;
+}
+
+// --- Config ---
+const KNOWN_KEYS = {
+  TELEGRAM_BOT_TOKEN: { label: 'Telegram — Token del Bot', type: 'text' },
+  TELEGRAM_CHAT_ID: { label: 'Telegram — Chat ID (ingresar manualmente)', type: 'text' },
+  HUMAN_WA: { label: 'WhatsApp Asesor (fallback si no hay Telegram)', type: 'text' },
+  BOT_WA: { label: 'WhatsApp Bot', type: 'text' },
+  PLAY_STORE_URL: { label: 'URL Play Store', type: 'text' },
+  SITE_URL: { label: 'URL Sitio Web', type: 'text' },
+  SUPPORT_HOURS: { label: 'Horario de Soporte', type: 'text' },
+  STATE_TTL_MS: { label: 'TTL Estado (ms)', type: 'number' },
+  V2BOARD_ADMIN_EMAIL: { label: 'V2Board Admin Email', type: 'text' },
+  V2BOARD_ADMIN_PASSWORD: { label: 'V2Board Admin Password', type: 'text' },
+  V2BOARD_ADMIN_PATH: { label: 'V2Board Admin Path', type: 'text' },
+  V2BOARD_API_BASE: { label: 'V2Board API Base', type: 'text' },
+  V2BOARD_DB_USER: { label: 'V2Board DB Usuario', type: 'text' },
+  V2BOARD_DB_PASS: { label: 'V2Board DB Password', type: 'text' },
+  V2BOARD_DB_NAME: { label: 'V2Board DB Nombre', type: 'text' },
+  V2BOARD_PANEL_URL: { label: 'V2Board Panel URL', type: 'text' },
+  BOT_BASE_URL: { label: 'URL Base del Bot', type: 'text' },
+  APP_STORE_URL: { label: 'URL App Store (iOS)', type: 'text' },
+  FOLLOWUP_MESSAGE: { label: 'Mensaje de seguimiento 24h (dejar vacío para usar el predeterminado)', type: 'text' },
+  PURCHASES_ENABLED: { label: 'Compras y Pagos', type: 'hidden' },
+  REGISTER_ENABLED: { label: 'Crear Cuenta (bot)', type: 'hidden' },
+  SUBSCRIBE_ENABLED: { label: 'Consultar Suscripción (bot)', type: 'hidden' },
+  RATING_CAMPAIGN_ENABLED: { label: 'Campaña Calificaciones', type: 'hidden' },
+  RATING_CREDIT_AMOUNT: { label: 'Monto a acreditar (unidad V2Board)', type: 'number' },
+  RATING_CREDIT_DISPLAY: { label: 'Texto del monto (ej. $30)', type: 'text' }
+};
+let configData = {};
+
+async function loadConfig() {
+  configData = await api('GET', '/config');
+  renderConfigFields();
+  updatePurchasesToggleUI();
+  updateRegisterToggleUI();
+  updateSubscribeToggleUI();
+  updateRatingToggleUI();
+}
+
+function updatePurchasesToggleUI() {
+  const enabled = configData.PURCHASES_ENABLED !== false;
+  const checkbox = document.getElementById('toggle-purchases');
+  const card = document.getElementById('purchases-toggle-card');
+  const desc = document.getElementById('purchases-toggle-desc');
+  if (checkbox) checkbox.checked = enabled;
+  if (card) card.classList.toggle('disabled', !enabled);
+  if (desc) desc.textContent = enabled
+    ? 'Activo — los usuarios pueden comprar planes desde el bot.'
+    : 'Desactivado — los usuarios verán un mensaje de que las compras no están disponibles. Ideal para revisión de App Store.';
+}
+
+async function onPurchasesToggle() {
+  const enabled = document.getElementById('toggle-purchases').checked;
+  configData.PURCHASES_ENABLED = enabled;
+  updatePurchasesToggleUI();
+  await api('PUT', '/config', configData);
+  toast(enabled ? 'Compras activadas' : 'Compras desactivadas');
+}
+
+function updateRegisterToggleUI() {
+  const enabled = configData.REGISTER_ENABLED !== false;
+  const checkbox = document.getElementById('toggle-register');
+  const card = document.getElementById('register-toggle-card');
+  const desc = document.getElementById('register-toggle-desc');
+  if (checkbox) checkbox.checked = enabled;
+  if (card) card.classList.toggle('disabled', !enabled);
+  if (desc) desc.textContent = enabled
+    ? 'Activo — los usuarios pueden crear su cuenta desde el bot.'
+    : 'Desactivado — las opciones de registro se ocultan del menú y el bot dirige a la app.';
+}
+
+async function onRegisterToggle() {
+  const enabled = document.getElementById('toggle-register').checked;
+  configData.REGISTER_ENABLED = enabled;
+  updateRegisterToggleUI();
+  await api('PUT', '/config', configData);
+  toast(enabled ? 'Registro activado' : 'Registro desactivado');
+}
+
+function updateSubscribeToggleUI() {
+  const enabled = configData.SUBSCRIBE_ENABLED !== false;
+  const checkbox = document.getElementById('toggle-subscribe');
+  const card = document.getElementById('subscribe-toggle-card');
+  const desc = document.getElementById('subscribe-toggle-desc');
+  if (checkbox) checkbox.checked = enabled;
+  if (card) card.classList.toggle('disabled', !enabled);
+  if (desc) desc.textContent = enabled
+    ? 'Activo — los usuarios pueden consultar su suscripción desde el bot.'
+    : 'Desactivado — la opción se oculta del menú y el bot dirige al panel web.';
+}
+
+async function onSubscribeToggle() {
+  const enabled = document.getElementById('toggle-subscribe').checked;
+  configData.SUBSCRIBE_ENABLED = enabled;
+  updateSubscribeToggleUI();
+  await api('PUT', '/config', configData);
+  toast(enabled ? 'Consulta de suscripción activada' : 'Consulta de suscripción desactivada');
+}
+
+function updateRatingToggleUI() {
+  const enabled = configData.RATING_CAMPAIGN_ENABLED === true;
+  const checkbox = document.getElementById('toggle-rating');
+  const card = document.getElementById('rating-toggle-card');
+  const desc = document.getElementById('rating-toggle-desc');
+  if (checkbox) checkbox.checked = enabled;
+  if (card) card.classList.toggle('disabled', !enabled);
+  if (desc) desc.textContent = enabled
+    ? 'Activo — aparece en el menú como opción para ganar saldo.'
+    : 'Desactivado — la opción no aparece en el menú.';
+}
+
+async function onRatingToggle() {
+  const enabled = document.getElementById('toggle-rating').checked;
+  configData.RATING_CAMPAIGN_ENABLED = enabled;
+  updateRatingToggleUI();
+  await api('PUT', '/config', configData);
+  toast(enabled ? 'Campaña de calificaciones activada' : 'Campaña desactivada');
+}
+
+async function loadRatings() {
+  const ratings = await api('GET', '/ratings');
+  const tbody = document.getElementById('ratings-body');
+  if (!ratings.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1rem;color:#999">Sin calificaciones aún</td></tr>';
+    return;
+  }
+  const cfg = configData || {};
+  const baseUrl = cfg.BOT_BASE_URL || '';
+  tbody.innerHTML = ratings.map(r => {
+    const screenshotUrl = r.ratingFilename ? `${baseUrl}/receipts/${r.ratingFilename}` : null;
+    return `<tr>
+      <td style="padding:.4rem;white-space:nowrap">${formatDate(r.createdAt)}</td>
+      <td style="padding:.4rem"><a href="https://wa.me/${esc(r.from)}" target="_blank" style="color:#128c7e;text-decoration:none">📱 ${esc(r.from)}</a></td>
+      <td style="padding:.4rem">${esc(r.email || '-')}</td>
+      <td style="padding:.4rem">${screenshotUrl ? `<a href="${esc(screenshotUrl)}" target="_blank">Ver captura 🖼️</a>` : '-'}</td>
+      <td style="padding:.4rem">${r.credited ? '<span style="color:#276749">✅ Acreditado</span>' : r.rejected ? '<span style="color:#c53030">❌ Rechazado</span>' : '<span style="color:#c05621">⏳ Pendiente</span>'}</td>
+      <td style="padding:.4rem;white-space:nowrap">${!r.credited && !r.rejected ? `<button class="btn btn-primary btn-sm" onclick="approveRating('${r.id}')" style="background:#276749;margin-right:.25rem">Aprobar</button><button class="btn btn-secondary btn-sm" onclick="rejectRating('${r.id}')" style="color:#c53030;margin-right:.25rem">Rechazar</button>` : ''}<button class="btn btn-secondary btn-sm" onclick="deleteRating('${r.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function approveRating(id) {
+  if (!confirm('¿Aprobar y acreditar el saldo a este usuario?')) return;
+  await api('POST', '/ratings/' + id + '/approve');
+  await loadRatings();
+  toast('✅ Saldo acreditado y usuario notificado');
+}
+
+async function rejectRating(id) {
+  if (!confirm('¿Rechazar esta calificación? Se notificará al usuario.')) return;
+  await api('POST', '/ratings/' + id + '/reject');
+  await loadRatings();
+  toast('Calificación rechazada');
+}
+
+async function deleteRating(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await api('DELETE', '/ratings/' + id);
+  await loadRatings();
+  toast('Registro eliminado');
+}
+
+function renderConfigFields() {
+  const container = document.getElementById('config-fields');
+  const allKeys = Object.keys(KNOWN_KEYS);
+  // Add any keys from data that aren't in KNOWN_KEYS
+  for (const key of Object.keys(configData)) {
+    if (!allKeys.includes(key)) allKeys.push(key);
+  }
+  container.innerHTML = allKeys.filter(key => {
+    const known = KNOWN_KEYS[key];
+    return !(known && known.type === 'hidden');
+  }).map(key => {
+    const known = KNOWN_KEYS[key];
+    const val = configData[key] !== undefined ? configData[key] : '';
+    const labelText = known ? known.label : key;
+    const inputType = known ? known.type : 'text';
+    const isCustom = !known;
+    return `<div class="config-var" data-key="${esc(key)}">
+      <div class="config-var-header">
+        <div>
+          <span class="config-var-key">{{${esc(key)}}}</span>
+          ${known ? '<span class="config-var-label"> — ' + esc(labelText) + '</span>' : '<span class="config-var-label"> — Variable personalizada</span>'}
+        </div>
+        ${isCustom ? '<button class="btn btn-danger btn-sm" onclick="removeConfigVar(\'' + esc(key) + '\')">Eliminar</button>' : ''}
+      </div>
+      <input type="${inputType}" data-cfg-key="${esc(key)}" value="${esc(String(val))}">
+    </div>`;
+  }).join('');
+}
+
+function addConfigVar() {
+  const name = prompt('Nombre de la variable (ej. APP_STORE_URL):');
+  if (!name) return;
+  const key = name.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  if (!key) { toast('Nombre inválido'); return; }
+  if (configData[key] !== undefined) { toast('Ya existe una variable con ese nombre'); return; }
+  configData[key] = '';
+  renderConfigFields();
+  // Focus the new input
+  const newInput = document.querySelector(`[data-cfg-key="${key}"]`);
+  if (newInput) newInput.focus();
+  toast('Variable agregada — edita el valor y guarda');
+}
+
+function removeConfigVar(key) {
+  if (!confirm('¿Eliminar variable "' + key + '"?')) return;
+  delete configData[key];
+  renderConfigFields();
+  toast('Variable eliminada (guarda para aplicar)');
+}
+
+async function saveConfig() {
+  // Reload from server first so we don't overwrite values changed server-side (e.g. TELEGRAM_CHAT_ID)
+  const serverData = await api('GET', '/config');
+  const data = { ...serverData };
+  document.querySelectorAll('[data-cfg-key]').forEach(input => {
+    const key = input.dataset.cfgKey;
+    const known = KNOWN_KEYS[key];
+    if (known && known.type === 'number') {
+      data[key] = Number(input.value);
+    } else {
+      data[key] = input.value;
+    }
+  });
+  data.PURCHASES_ENABLED = document.getElementById('toggle-purchases').checked;
+  data.REGISTER_ENABLED = document.getElementById('toggle-register').checked;
+  data.SUBSCRIBE_ENABLED = document.getElementById('toggle-subscribe').checked;
+  data.RATING_CAMPAIGN_ENABLED = document.getElementById('toggle-rating').checked;
+  configData = data;
+  await api('PUT', '/config', data);
+  toast('Configuración guardada');
+}
+
+async function setupTelegramWebhook() {
+  const result = await api('POST', '/telegram/setup');
+  if (result.ok) {
+    toast('Webhook de Telegram registrado: ' + result.description);
+  } else {
+    toast('Error: ' + result.error);
+  }
+}
+
+// --- Prompt ---
+async function loadPrompt() {
+  const data = await api('GET', '/prompt');
+  document.getElementById('prompt-text').value = data.systemPrompt || '';
+  // Show available placeholders from config
+  const keys = Object.keys(configData);
+  if (keys.length) {
+    document.getElementById('prompt-placeholders').innerHTML =
+      'Placeholders: ' + keys.map(k => '<code>{{' + esc(k) + '}}</code>').join(', ');
+  }
+}
+
+async function savePrompt() {
+  const text = document.getElementById('prompt-text').value;
+  await api('PUT', '/prompt', { systemPrompt: text });
+  toast('Prompt guardado');
+}
+
+// --- Knowledge ---
+let kbData = [];
+
+async function loadKB() {
+  kbData = await api('GET', '/knowledge');
+  renderKB();
+}
+
+function renderKB() {
+  const list = document.getElementById('kb-list');
+  if (!kbData.length) { list.innerHTML = '<p style="color:#999;margin-top:1rem">No hay FAQs. Agrega la primera.</p>'; return; }
+  list.innerHTML = kbData.map(item => `
+    <div class="kb-item ${item.enabled ? '' : 'disabled'}" onclick="toggleKBAnswer(this)" style="cursor:pointer">
+      <div class="kb-header">
+        <span class="kb-category">${esc(item.category || 'General')}</span>
+        <span style="font-size:.75rem;color:#999">${item.enabled ? 'Activa' : 'Deshabilitada'}</span>
+      </div>
+      <div class="kb-question">${esc(item.question)}</div>
+      <div class="kb-answer" style="display:none;white-space:pre-wrap">${esc(item.answer)}</div>
+      <div class="kb-actions">
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleKB('${item.id}', ${!item.enabled})">${item.enabled ? 'Deshabilitar' : 'Habilitar'}</button>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editKB('${item.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteKB('${item.id}')">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleKBAnswer(el) {
+  const answer = el.querySelector('.kb-answer');
+  answer.style.display = answer.style.display === 'none' ? '' : 'none';
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function openKBModal(item) {
+  document.getElementById('kb-modal-title').textContent = item ? 'Editar FAQ' : 'Agregar FAQ';
+  document.getElementById('kb-edit-id').value = item ? item.id : '';
+  document.getElementById('kb-category').value = item ? item.category || '' : '';
+  document.getElementById('kb-question').value = item ? item.question || '' : '';
+  document.getElementById('kb-answer').value = item ? item.answer || '' : '';
+  document.getElementById('kb-enabled').checked = item ? item.enabled : true;
+  const keys = Object.keys(configData);
+  document.getElementById('kb-placeholders').innerHTML = keys.length
+    ? 'Placeholders: ' + keys.map(k => '<code>{{' + esc(k) + '}}</code>').join(', ')
+    : '';
+  document.getElementById('kb-modal').classList.add('show');
+}
+
+function closeKBModal() { document.getElementById('kb-modal').classList.remove('show'); }
+
+function editKB(id) {
+  const item = kbData.find(k => k.id === id);
+  if (item) openKBModal(item);
+}
+
+async function saveKB() {
+  const id = document.getElementById('kb-edit-id').value;
+  const body = {
+    category: document.getElementById('kb-category').value,
+    question: document.getElementById('kb-question').value,
+    answer: document.getElementById('kb-answer').value,
+    enabled: document.getElementById('kb-enabled').checked
+  };
+  if (!body.question || !body.answer) { toast('Pregunta y respuesta son obligatorias'); return; }
+  if (id) { await api('PUT', '/knowledge/' + id, body); }
+  else { await api('POST', '/knowledge', body); }
+  closeKBModal();
+  await loadKB();
+  toast(id ? 'FAQ actualizada' : 'FAQ agregada');
+}
+
+async function toggleKB(id, enabled) {
+  await api('PUT', '/knowledge/' + id, { enabled });
+  await loadKB();
+  toast(enabled ? 'FAQ habilitada' : 'FAQ deshabilitada');
+}
+
+async function deleteKB(id) {
+  if (!confirm('¿Eliminar esta FAQ?')) return;
+  await api('DELETE', '/knowledge/' + id);
+  await loadKB();
+  toast('FAQ eliminada');
+}
+
+// --- Logs ---
+async function loadLogs() {
+  const limit = document.getElementById('log-limit').value;
+  const [logs] = await Promise.all([api('GET', '/logs?limit=' + limit), loadStats()]);
+  const tbody = document.getElementById('log-body');
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999">Sin conversaciones aún</td></tr>'; return; }
+  const reversed = logs.reverse();
+  tbody.innerHTML = reversed.map((l, i) => `
+    <tr>
+      <td style="white-space:nowrap">${formatDate(l.timestamp)}</td>
+      <td style="white-space:nowrap">${l.from ? `<a href="https://wa.me/${esc(l.from)}" target="_blank" style="color:#128c7e;text-decoration:none" title="Abrir en WhatsApp">📱 ${esc(l.from)}</a>` : '-'}</td>
+      <td class="msg-cell" onclick="toggleMsg(this,${i},'msg')" ondblclick="copyMsg(event,${i},'msg')" title="Click para expandir · Doble click para copiar">${esc(truncate(l.message, 80))}</td>
+      <td class="msg-cell" onclick="toggleMsg(this,${i},'reply')" ondblclick="copyMsg(event,${i},'reply')" title="Click para expandir · Doble click para copiar">${esc(truncate(l.reply, 80))}</td>
+      <td>${l.intent ? '<span class="log-intent">' + esc(l.intent) + '</span>' : '-'}</td>
+    </tr>
+  `).join('');
+  window._logRows = reversed;
+}
+
+async function loadStats() {
+  const stats = await api('GET', '/stats');
+  renderStats(stats);
+}
+
+const INTENT_LABELS = {
+  menu: 'Menú', how: 'Cómo funciona', pricing: 'Precios', support: 'Soporte',
+  advisor: 'Asesor', profanity: 'Profanidad', ai_fallback: 'IA Fallback',
+  flow: 'Flujo', sin_intent: 'Sin intent'
+};
+
+function renderStats(s) {
+  const container = document.getElementById('log-stats');
+  const maxIntent = s.intents.length ? s.intents[0].count : 1;
+
+  // Per-day chart helpers
+  const dayLabels = { Mon: 'Lun', Tue: 'Mar', Wed: 'Mié', Thu: 'Jue', Fri: 'Vie', Sat: 'Sáb', Sun: 'Dom' };
+  function buildBars(entries, color) {
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    return entries.map(([date, count]) => {
+      const d = new Date(date + 'T12:00:00');
+      const label = dayLabels[d.toLocaleDateString('en', { weekday: 'short' })] || '';
+      const pct = Math.round((count / max) * 100);
+      return `<div class="chart-bar-col">
+        <span style="font-size:.7rem;color:#333">${count}</span>
+        <div class="chart-bar" style="height:${Math.max(pct, 3)}%;background:${color}"></div>
+        <span class="chart-bar-label">${esc(label)}<br>${date.slice(5)}</span>
+      </div>`;
+    }).join('');
+  }
+  const chartBars = buildBars(Object.entries(s.perDay), '#25d366');
+  const chartBarsUsers = buildBars(Object.entries(s.perDayUsers || {}), '#128c7e');
+
+  // Intent bars
+  const intentBars = s.intents.slice(0, 8).map(i => {
+    const pct = Math.round((i.count / maxIntent) * 100);
+    const label = INTENT_LABELS[i.name] || i.name;
+    return `<div class="intent-bar-wrap">
+      <div class="intent-bar-header"><span>${esc(label)}</span><span>${i.count}</span></div>
+      <div class="intent-bar"><div class="intent-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  // Top users
+  const usersHtml = s.topUsers.slice(0, 5).map(u =>
+    `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.2rem 0;border-bottom:1px solid #f0f0f0">
+      <span>+${esc(u.phone)}</span><span style="font-weight:600">${u.count}</span>
+    </div>`
+  ).join('');
+
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${s.total}</div><div class="stat-label">Total mensajes</div></div>
+      <div class="stat-card"><div class="stat-value">${s.todayCount}</div><div class="stat-label">Hoy</div></div>
+      <div class="stat-card"><div class="stat-value">${s.uniqueUsersToday ?? '-'}</div><div class="stat-label">Usuarios hoy</div></div>
+      <div class="stat-card"><div class="stat-value">${s.uniqueUsers}</div><div class="stat-label">Usuarios únicos</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem">
+      <div class="section-box" style="margin-bottom:0">
+        <h3 style="font-size:.9rem;margin-bottom:.5rem">Mensajes (últimos 7 días)</h3>
+        <div class="chart-bar-row">${chartBars}</div>
+      </div>
+      <div class="section-box" style="margin-bottom:0">
+        <h3 style="font-size:.9rem;margin-bottom:.5rem">Usuarios únicos (últimos 7 días)</h3>
+        <div class="chart-bar-row">${chartBarsUsers}</div>
+      </div>
+      <div class="section-box" style="margin-bottom:0">
+        <h3 style="font-size:.9rem;margin-bottom:.5rem">Intents más consultados</h3>
+        ${intentBars || '<p style="color:#999;font-size:.85rem">Sin datos</p>'}
+      </div>
+      <div class="section-box" style="margin-bottom:0">
+        <h3 style="font-size:.9rem;margin-bottom:.5rem">Usuarios más activos</h3>
+        ${usersHtml || '<p style="color:#999;font-size:.85rem">Sin datos</p>'}
+      </div>
+    </div>`;
+}
+
+async function clearLogs() {
+  if (!confirm('¿Eliminar TODAS las conversaciones? Esta acción no se puede deshacer.')) return;
+  await api('DELETE', '/logs');
+  await loadLogs();
+  toast('Conversaciones eliminadas');
+}
+
+// --- Flows ---
+let flowsData = { menu: { triggers: [], fullMenu: '', shortMenu: '', cooldownMs: 120000 }, options: [], flows: [] };
+
+async function loadFlows() {
+  flowsData = await api('GET', '/flows');
+  renderFlowsTab();
+}
+
+function renderFlowsTab() {
+  const m = flowsData.menu || {};
+  document.getElementById('flow-triggers').value = (m.triggers || []).join(', ');
+  document.getElementById('flow-welcome').value = m.welcomeMessage || '';
+  document.getElementById('flow-cooldown').value = m.cooldownMs || 120000;
+  document.getElementById('flow-menu-header').value = m.fullMenuHeader || '';
+  document.getElementById('flow-menu-footer').value = m.fullMenuFooter || '';
+  document.getElementById('flow-short-header').value = m.shortMenuHeader || '';
+  renderOptions();
+  renderFlowsList();
+  updateMenuPreview();
+}
+
+function keyEmoji(key) {
+  const map = {'1':'1️⃣','2':'2️⃣','3':'3️⃣','4':'4️⃣','5':'5️⃣','6':'6️⃣','7':'7️⃣','8':'8️⃣','9':'9️⃣','10':'🔟'};
+  return map[key] || key;
+}
+
+function buildFullMenu() {
+  const header = document.getElementById('flow-menu-header').value;
+  const footer = document.getElementById('flow-menu-footer').value;
+  const opts = (flowsData.options || []).map(o => `${keyEmoji(o.key)} ${o.label}`).join('\n');
+  return [header, opts, footer].filter(Boolean).join('\n\n');
+}
+
+function buildShortMenu() {
+  const header = document.getElementById('flow-short-header').value;
+  const opts = (flowsData.options || []).map(o => `${keyEmoji(o.key)} ${o.label}`).join('  ');
+  return [header, opts].filter(Boolean).join('\n\n');
+}
+
+function updateMenuPreview() {
+  document.getElementById('menu-preview').textContent = '📋 Menú completo:\n' + (buildFullMenu() || '(vacío)');
+  document.getElementById('short-menu-preview').textContent = '📋 Menú corto:\n' + (buildShortMenu() || '(vacío)');
+}
+
+// --- Options ---
+function renderOptions() {
+  const list = document.getElementById('options-list');
+  if (!flowsData.options || !flowsData.options.length) {
+    list.innerHTML = '<p style="color:#999">No hay opciones. Agrega la primera.</p>';
+    return;
+  }
+  list.innerHTML = flowsData.options.map((opt, i) => {
+    const flowName = opt.flowId ? (flowsData.flows.find(f => f.id === opt.flowId)?.name || opt.flowId) : '';
+    return `<div class="flow-card">
+      <div class="flow-card-header">
+        <span class="flow-card-title">${esc(opt.key)} — ${esc(opt.label)}</span>
+        <span style="font-size:.75rem;color:#999">intent: ${esc(opt.intent)}</span>
+      </div>
+      <div class="flow-card-subtitle">${esc(truncate(opt.response, 100))}${flowName ? ' → Flujo: <b>' + esc(flowName) + '</b>' : ''}</div>
+      <div class="flow-card-actions">
+        ${i > 0 ? `<button class="btn btn-secondary btn-sm" onclick="moveOption(${i},-1)" title="Subir">&#8593;</button>` : ''}
+        ${i < flowsData.options.length - 1 ? `<button class="btn btn-secondary btn-sm" onclick="moveOption(${i},1)" title="Bajar">&#8595;</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="editOption(${i})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOption(${i})">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function moveOption(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= flowsData.options.length) return;
+  [flowsData.options[i], flowsData.options[j]] = [flowsData.options[j], flowsData.options[i]];
+  renderOptions();
+  updateMenuPreview();
+  await persistFlows();
+}
+
+function populateFlowSelect(selectedId) {
+  const sel = document.getElementById('opt-flowId');
+  sel.innerHTML = '<option value="">— Ninguno —</option>' +
+    (flowsData.flows || []).map(f =>
+      `<option value="${esc(f.id)}" ${f.id === selectedId ? 'selected' : ''}>${esc(f.name)}</option>`
+    ).join('');
+}
+
+function openOptionModal(opt, idx) {
+  document.getElementById('option-modal-title').textContent = opt ? 'Editar Opción' : 'Agregar Opción';
+  document.getElementById('opt-edit-idx').value = idx !== undefined ? idx : -1;
+  document.getElementById('opt-key').value = opt ? opt.key : '';
+  document.getElementById('opt-label').value = opt ? opt.label : '';
+  document.getElementById('opt-intent').value = opt ? opt.intent : '';
+  document.getElementById('opt-response').value = opt ? opt.response : '';
+  populateFlowSelect(opt ? opt.flowId : '');
+  document.getElementById('opt-notify-human').checked = opt ? !!opt.notifyHuman : false;
+  populateMediaSelect(document.getElementById('opt-mediaId'), opt ? opt.mediaId : '');
+  // Show available placeholders
+  const keys = Object.keys(configData);
+  if (keys.length) {
+    document.getElementById('opt-placeholders').innerHTML =
+      'Placeholders: ' + keys.map(k => '{{' + esc(k) + '}}').join(', ');
+  }
+  document.getElementById('option-modal').classList.add('show');
+}
+
+function closeOptionModal() { document.getElementById('option-modal').classList.remove('show'); }
+
+function editOption(idx) {
+  openOptionModal(flowsData.options[idx], idx);
+}
+
+async function deleteOption(idx) {
+  if (!confirm('¿Eliminar opción "' + flowsData.options[idx].key + '"?')) return;
+  flowsData.options.splice(idx, 1);
+  renderOptions();
+  updateMenuPreview();
+  await persistFlows();
+  toast('Opción eliminada');
+}
+
+async function saveOption() {
+  const idx = parseInt(document.getElementById('opt-edit-idx').value);
+  const key = document.getElementById('opt-key').value.trim();
+  const label = document.getElementById('opt-label').value.trim();
+  const intent = document.getElementById('opt-intent').value.trim();
+  const response = document.getElementById('opt-response').value;
+  const flowId = document.getElementById('opt-flowId').value || null;
+  const notifyHuman = document.getElementById('opt-notify-human').checked;
+  const mediaId = document.getElementById('opt-mediaId').value || null;
+
+  if (!key || !label) { toast('Tecla y etiqueta son obligatorias'); return; }
+
+  const opt = {
+    id: idx >= 0 ? flowsData.options[idx].id : 'opt_' + Date.now().toString(36),
+    key, label, intent, response, flowId, notifyHuman, mediaId
+  };
+
+  if (idx >= 0) {
+    flowsData.options[idx] = opt;
+  } else {
+    flowsData.options.push(opt);
+  }
+
+  closeOptionModal();
+  renderOptions();
+  updateMenuPreview();
+  await persistFlows();
+  toast(idx >= 0 ? 'Opción guardada' : 'Opción agregada');
+}
+
+// --- Flows multi-step ---
+function renderFlowsList() {
+  const list = document.getElementById('flows-list');
+  if (!flowsData.flows || !flowsData.flows.length) {
+    list.innerHTML = '<p style="color:#999">No hay flujos. Agrega el primero.</p>';
+    return;
+  }
+  list.innerHTML = flowsData.flows.map((fl, i) => {
+    const stepsInfo = (fl.steps || []).length + ' paso(s)';
+    const usedBy = (flowsData.options || []).filter(o => o.flowId === fl.id).map(o => o.key).join(', ');
+    return `<div class="flow-card">
+      <div class="flow-card-header">
+        <span class="flow-card-title">${esc(fl.name)}</span>
+        <span style="font-size:.75rem;color:#999">${esc(fl.id)} · ${stepsInfo}${usedBy ? ' · Usado por: ' + esc(usedBy) : ''}</span>
+      </div>
+      <div class="flow-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editFlow(${i})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteFlowLocal(${i})">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let modalSteps = [];
+
+function openFlowModal(fl, idx) {
+  document.getElementById('flow-modal-title').textContent = fl ? 'Editar Flujo' : 'Agregar Flujo';
+  document.getElementById('fl-edit-idx').value = idx !== undefined ? idx : -1;
+  document.getElementById('fl-name').value = fl ? fl.name : '';
+  document.getElementById('fl-id').value = fl ? fl.id : '';
+  document.getElementById('fl-completion').value = fl ? fl.completionMessage : '';
+  document.getElementById('fl-create-ticket').checked = fl ? !!fl.createTicket : false;
+  populateMediaSelect(document.getElementById('fl-completion-media'), fl ? fl.completionMediaId : '');
+  if (fl && idx !== undefined) {
+    document.getElementById('fl-id').readOnly = true;
+  } else {
+    document.getElementById('fl-id').readOnly = false;
+  }
+  modalSteps = fl ? JSON.parse(JSON.stringify(fl.steps || [])) : [];
+  renderModalSteps();
+  updateFlowPlaceholders();
+  document.getElementById('flow-modal').classList.add('show');
+}
+
+function updateFlowPlaceholders() {
+  const cfgKeys = Object.keys(configData);
+  const varNames = modalSteps.filter(s => s.varName).map(s => s.varName);
+  let html = '';
+  if (varNames.length) {
+    html += '<b>Variables del flujo:</b> ' + varNames.map(v => '<code>{{' + esc(v) + '}}</code>').join(', ');
+  }
+  if (cfgKeys.length) {
+    if (html) html += '<br>';
+    html += '<b>Config:</b> ' + cfgKeys.map(k => '<code>{{' + esc(k) + '}}</code>').join(', ');
+  }
+  if (!html) html = 'Agrega pasos con variables y guarda config para ver placeholders disponibles.';
+  document.getElementById('fl-placeholders').innerHTML = html;
+}
+
+function closeFlowModal() { document.getElementById('flow-modal').classList.remove('show'); }
+
+function editFlow(idx) {
+  openFlowModal(flowsData.flows[idx], idx);
+}
+
+async function deleteFlowLocal(idx) {
+  const fl = flowsData.flows[idx];
+  const usedBy = (flowsData.options || []).filter(o => o.flowId === fl.id);
+  if (usedBy.length) {
+    toast('No se puede eliminar: usado por opción(es) ' + usedBy.map(o => o.key).join(', '));
+    return;
+  }
+  if (!confirm('¿Eliminar flujo "' + fl.name + '"?')) return;
+  flowsData.flows.splice(idx, 1);
+  renderFlowsList();
+  await persistFlows();
+  toast('Flujo eliminado');
+}
+
+function renderModalSteps() {
+  const container = document.getElementById('fl-steps');
+  if (!modalSteps.length) {
+    container.innerHTML = '<p style="color:#999;font-size:.85rem">Sin pasos aún.</p>';
+    return;
+  }
+  container.innerHTML = modalSteps.map((step, i) => {
+    let choicesHtml = '';
+    if (step.inputType === 'choice') {
+      const choices = step.choices || [];
+      choicesHtml = `<div class="choices-list" id="step-choices-${i}">
+        <label style="font-size:.8rem">Opciones:</label>
+        ${choices.map((c, ci) => `<div class="choice-row">
+          <input type="text" value="${esc(c.key)}" placeholder="Tecla" style="max-width:50px" onchange="updateChoice(${i},${ci},'key',this.value)">
+          <input type="text" value="${esc(c.label)}" placeholder="Etiqueta" onchange="updateChoice(${i},${ci},'label',this.value)">
+          <input type="text" value="${esc(c.value)}" placeholder="Valor" onchange="updateChoice(${i},${ci},'value',this.value)">
+          <input type="text" value="${esc((c.aliases||[]).join(', '))}" placeholder="Aliases" onchange="updateChoiceAliases(${i},${ci},this.value)">
+          <button class="btn btn-danger btn-sm" onclick="removeChoice(${i},${ci})" title="Quitar">&times;</button>
+        </div>
+        <div style="margin-left:54px;margin-bottom:.5rem">
+          <textarea style="min-height:50px;font-size:.8rem" placeholder="Respuesta propia (opcional) — termina el flujo con este texto. Usa {{PLACEHOLDERS}} de config." onchange="updateChoice(${i},${ci},'response',this.value)">${esc(c.response || '')}</textarea>
+          <select style="margin-top:.3rem;font-size:.8rem" onchange="updateChoice(${i},${ci},'mediaId',this.value||null)">
+            <option value="">Media: Ninguno</option>
+            ${mediaData.map(m => `<option value="${esc(m.id)}" ${m.id === c.mediaId ? 'selected' : ''}>${esc(m.name)} (${esc(m.type)})</option>`).join('')}
+          </select>
+        </div>`).join('')}
+        <button class="btn btn-secondary btn-sm" onclick="addChoice(${i})" style="margin-top:.3rem">+ Opción</button>
+        <div style="margin-top:.5rem;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:6px;padding:.5rem;font-size:.8rem;white-space:pre-wrap">${esc(step.message || '(mensaje)')}\n\n${choices.map(c => keyEmoji(c.key) + ' ' + (c.label || '...')).join('\n')}</div>
+      </div>`;
+    }
+    return `<div class="flow-step-item">
+      <div class="step-num">${i + 1}</div>
+      <div class="step-body">
+        <textarea style="min-height:60px;margin-bottom:.3rem" placeholder="Mensaje del paso" onchange="modalSteps[${i}].message=this.value">${esc(step.message)}</textarea>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:.8rem;margin:0">Variable</label>
+            <input type="text" value="${esc(step.varName)}" placeholder="varName" onchange="modalSteps[${i}].varName=this.value;updateFlowPlaceholders()">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:.8rem;margin:0">Tipo</label>
+            <select onchange="changeStepType(${i},this.value)">
+              <option value="text" ${step.inputType === 'text' ? 'selected' : ''}>Texto libre</option>
+              <option value="choice" ${step.inputType === 'choice' ? 'selected' : ''}>Opciones</option>
+            </select>
+          </div>
+        </div>
+        ${choicesHtml}
+        <div class="flow-step-actions">
+          ${i > 0 ? `<button class="btn btn-secondary btn-sm" onclick="moveStep(${i},-1)">&#8593;</button>` : ''}
+          ${i < modalSteps.length - 1 ? `<button class="btn btn-secondary btn-sm" onclick="moveStep(${i},1)">&#8595;</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="removeStep(${i})">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addStepToModal() {
+  modalSteps.push({ id: 's' + Date.now().toString(36), message: '', inputType: 'text', varName: '' });
+  renderModalSteps();
+}
+
+function removeStep(i) {
+  modalSteps.splice(i, 1);
+  renderModalSteps();
+}
+
+function moveStep(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= modalSteps.length) return;
+  [modalSteps[i], modalSteps[j]] = [modalSteps[j], modalSteps[i]];
+  renderModalSteps();
+}
+
+function changeStepType(i, type) {
+  modalSteps[i].inputType = type;
+  if (type === 'choice' && !modalSteps[i].choices) {
+    modalSteps[i].choices = [{ key: '1', label: '', value: '', aliases: [], response: '' }];
+  }
+  renderModalSteps();
+}
+
+function addChoice(stepIdx) {
+  if (!modalSteps[stepIdx].choices) modalSteps[stepIdx].choices = [];
+  const nextKey = String(modalSteps[stepIdx].choices.length + 1);
+  modalSteps[stepIdx].choices.push({ key: nextKey, label: '', value: '', aliases: [], response: '' });
+  renderModalSteps();
+}
+
+function removeChoice(stepIdx, choiceIdx) {
+  modalSteps[stepIdx].choices.splice(choiceIdx, 1);
+  renderModalSteps();
+}
+
+function updateChoice(stepIdx, choiceIdx, field, value) {
+  modalSteps[stepIdx].choices[choiceIdx][field] = value;
+}
+
+function updateChoiceAliases(stepIdx, choiceIdx, value) {
+  modalSteps[stepIdx].choices[choiceIdx].aliases = value.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+async function saveFlow() {
+  const idx = parseInt(document.getElementById('fl-edit-idx').value);
+  const name = document.getElementById('fl-name').value.trim();
+  const id = document.getElementById('fl-id').value.trim().replace(/\s+/g, '_');
+  const completionMessage = document.getElementById('fl-completion').value;
+
+  if (!name || !id) { toast('Nombre e ID son obligatorios'); return; }
+
+  const createTicket = document.getElementById('fl-create-ticket').checked;
+  const completionMediaId = document.getElementById('fl-completion-media').value || null;
+  const fl = { id, name, createTicket, steps: modalSteps, completionMessage, completionMediaId };
+
+  if (idx >= 0) {
+    flowsData.flows[idx] = fl;
+  } else {
+    // Check duplicate ID
+    if (flowsData.flows.some(f => f.id === id)) { toast('Ya existe un flujo con ese ID'); return; }
+    flowsData.flows.push(fl);
+  }
+
+  closeFlowModal();
+  renderFlowsList();
+  await persistFlows();
+  toast(idx >= 0 ? 'Flujo guardado' : 'Flujo agregado');
+}
+
+// --- Persist flows to server ---
+function collectMenuFromForm() {
+  flowsData.menu = {
+    triggers: document.getElementById('flow-triggers').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+    welcomeMessage: document.getElementById('flow-welcome').value,
+    cooldownMs: parseInt(document.getElementById('flow-cooldown').value) || 120000,
+    fullMenuHeader: document.getElementById('flow-menu-header').value,
+    fullMenuFooter: document.getElementById('flow-menu-footer').value,
+    shortMenuHeader: document.getElementById('flow-short-header').value,
+    fullMenu: buildFullMenu(),
+    shortMenu: buildShortMenu()
+  };
+}
+
+async function persistFlows() {
+  collectMenuFromForm();
+  await api('PUT', '/flows', flowsData);
+}
+
+async function saveAllFlows() {
+  await persistFlows();
+  toast('Flujos guardados');
+}
+
+// --- Tickets ---
+let ticketsData = [];
+
+async function loadTickets() {
+  ticketsData = await api('GET', '/tickets');
+  renderTickets();
+}
+
+function renderTickets() {
+  const filter = document.getElementById('ticket-filter').value;
+  const filtered = filter === 'all' ? ticketsData : ticketsData.filter(t => t.status === filter);
+  const list = document.getElementById('tickets-list');
+  if (!filtered.length) {
+    list.innerHTML = '<p style="color:#999">No hay tickets' + (filter !== 'all' ? ' con este filtro' : '') + '.</p>';
+    return;
+  }
+  // Show newest first
+  list.innerHTML = [...filtered].reverse().map(t => {
+    const isOpen = t.status === 'open';
+    const varsHtml = t.vars ? Object.entries(t.vars).map(([k, v]) =>
+      `<span><b>${esc(k)}:</b> ${esc(v)}</span>`
+    ).join('') : '';
+    return `<div class="ticket-card ${isOpen ? '' : 'closed'}">
+      <div class="flow-card-header">
+        <span class="flow-card-title">${esc(t.flowName || 'Ticket')}</span>
+        <span class="${isOpen ? 'ticket-open' : 'ticket-closed'}">${isOpen ? 'Abierto' : 'Cerrado'}</span>
+      </div>
+      <div class="ticket-vars">${varsHtml}</div>
+      <div class="ticket-meta">
+        De: +${esc(t.from || '')} · ${formatDate(t.createdAt)}
+      </div>
+      <div class="flow-card-actions" style="margin-top:.5rem">
+        <a class="btn btn-primary btn-sm" href="https://wa.me/${esc(t.from)}" target="_blank" rel="noopener">Abrir WhatsApp</a>
+        ${isOpen
+          ? `<button class="btn btn-secondary btn-sm" onclick="closeTicket('${esc(t.id)}')">Marcar resuelto</button>`
+          : `<button class="btn btn-secondary btn-sm" onclick="reopenTicket('${esc(t.id)}')">Reabrir</button>`
+        }
+        <button class="btn btn-danger btn-sm" onclick="deleteTicket('${esc(t.id)}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function closeTicket(id) {
+  await api('PUT', '/tickets/' + id, { status: 'closed' });
+  await loadTickets();
+  toast('Ticket cerrado');
+}
+
+async function reopenTicket(id) {
+  await api('PUT', '/tickets/' + id, { status: 'open' });
+  await loadTickets();
+  toast('Ticket reabierto');
+}
+
+async function deleteTicket(id) {
+  if (!confirm('¿Eliminar este ticket?')) return;
+  await api('DELETE', '/tickets/' + id);
+  await loadTickets();
+  toast('Ticket eliminado');
+}
+
+// --- Media ---
+let mediaData = [];
+
+async function loadMedia() {
+  mediaData = await api('GET', '/media');
+  renderMedia();
+}
+
+function renderMedia() {
+  const list = document.getElementById('media-list');
+  if (!mediaData.length) { list.innerHTML = '<p style="color:#999">No hay multimedia. Agrega la primera.</p>'; return; }
+  list.innerHTML = mediaData.map(item => `
+    <div class="media-card">
+      <div class="flow-card-header">
+        <span class="flow-card-title">${esc(item.name)}</span>
+        <span class="media-badge ${esc(item.type)}">${esc(item.type)}</span>
+      </div>
+      <div class="flow-card-subtitle" style="word-break:break-all">${esc(truncate(item.url, 80))}${item.caption ? ' — <i>' + esc(item.caption) + '</i>' : ''}</div>
+      <div class="flow-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editMedia('${esc(item.id)}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMedia('${esc(item.id)}')">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openMediaModal(item) {
+  document.getElementById('media-modal-title').textContent = item ? 'Editar Media' : 'Agregar Media';
+  document.getElementById('media-edit-id').value = item ? item.id : '';
+  document.getElementById('media-name').value = item ? item.name || '' : '';
+  document.getElementById('media-type').value = item ? item.type || 'image' : 'image';
+  document.getElementById('media-url').value = item ? item.url || '' : '';
+  document.getElementById('media-caption').value = item ? item.caption || '' : '';
+  document.getElementById('media-modal').classList.add('show');
+}
+
+function closeMediaModal() { document.getElementById('media-modal').classList.remove('show'); }
+
+function editMedia(id) {
+  const item = mediaData.find(m => m.id === id);
+  if (item) openMediaModal(item);
+}
+
+async function saveMedia() {
+  const id = document.getElementById('media-edit-id').value;
+  const body = {
+    name: document.getElementById('media-name').value.trim(),
+    type: document.getElementById('media-type').value,
+    url: document.getElementById('media-url').value.trim(),
+    caption: document.getElementById('media-caption').value.trim()
+  };
+  if (!body.name || !body.url) { toast('Nombre y URL son obligatorios'); return; }
+  if (id) { await api('PUT', '/media/' + id, body); }
+  else { await api('POST', '/media', body); }
+  closeMediaModal();
+  await loadMedia();
+  toast(id ? 'Media actualizado' : 'Media agregado');
+}
+
+async function deleteMedia(id) {
+  if (!confirm('¿Eliminar este media?')) return;
+  try {
+    await api('DELETE', '/media/' + id);
+    await loadMedia();
+    toast('Media eliminado');
+  } catch (e) {
+    toast(e.message || 'No se pudo eliminar (puede estar en uso)');
+  }
+}
+
+function populateMediaSelect(selectEl, selectedId) {
+  selectEl.innerHTML = '<option value="">— Ninguno —</option>' +
+    mediaData.map(m =>
+      `<option value="${esc(m.id)}" ${m.id === selectedId ? 'selected' : ''}>${esc(m.name)} (${esc(m.type)})</option>`
+    ).join('');
+}
+
+// --- Transfers ---
+let transfersData = [];
+
+async function loadTransfers() {
+  transfersData = await api('GET', '/transfers');
+  renderTransfers();
+}
+
+function renderTransfers() {
+  const filter = document.getElementById('transfer-filter').value;
+  const filtered = filter === 'all' ? transfersData : transfersData.filter(t => t.status === filter);
+  const list = document.getElementById('transfers-list');
+  if (!filtered.length) {
+    list.innerHTML = '<p style="color:#999">No hay transferencias' + (filter !== 'all' ? ' con este filtro' : '') + '.</p>';
+    return;
+  }
+  const baseUrl = (configData.BOT_BASE_URL || 'https://bot.demianred.com').replace(/\/+$/, '');
+  list.innerHTML = [...filtered].reverse().map(t => {
+    const statusClass = t.status === 'verified' ? 'transfer-verified' : t.status === 'rejected' ? 'transfer-rejected' : 'transfer-pending';
+    const statusLabel = t.status === 'verified' ? 'Verificada' : t.status === 'rejected' ? 'Rechazada' : 'Pendiente';
+    const receiptUrl = t.receiptFilename ? baseUrl + '/receipts/' + t.receiptFilename : '';
+    const isImage = (t.receiptMimeType || '').startsWith('image/');
+    const thumbHtml = receiptUrl
+      ? (isImage
+        ? `<a href="${esc(receiptUrl)}" target="_blank"><img class="receipt-thumb" src="${esc(receiptUrl)}" alt="Comprobante"></a>`
+        : `<a href="${esc(receiptUrl)}" target="_blank" class="btn btn-secondary btn-sm">📄 Ver documento</a>`)
+      : '<span style="color:#999;font-size:.85rem">Sin comprobante</span>';
+    return `<div class="ticket-card" style="display:flex;gap:1rem;align-items:flex-start">
+      <div style="flex-shrink:0">${thumbHtml}</div>
+      <div style="flex:1;min-width:0">
+        <div class="flow-card-header">
+          <span class="flow-card-title">📋 ${esc(t.tradeNo || 'Sin orden')}</span>
+          <span class="${statusClass}">${statusLabel}</span>
+        </div>
+        <div style="font-size:.9rem;color:#555;margin:.4rem 0">
+          <b>Plan:</b> ${esc(t.planName || 'N/A')} — ${esc(t.periodLabel || '')}<br>
+          <b>Monto:</b> $${t.amount || 0} MXN<br>
+          <b>Email:</b> ${esc(t.email || 'N/A')}<br>
+          <b>Tel:</b> +${esc(t.from || '')}
+        </div>
+        <div class="ticket-meta">
+          ${formatDate(t.createdAt)}${t.reviewedAt ? ' · Revisada: ' + formatDate(t.reviewedAt) : ''}
+        </div>
+        <div class="flow-card-actions" style="margin-top:.5rem">
+          ${t.status === 'pending' ? `
+            <button class="btn btn-sm" style="background:#38a169;color:#fff" onclick="updateTransferStatus('${esc(t.id)}','verified')">✓ Verificar</button>
+            <button class="btn btn-sm" style="background:#e53e3e;color:#fff" onclick="updateTransferStatus('${esc(t.id)}','rejected')">✗ Rechazar</button>
+          ` : t.status === 'rejected' ? `
+            <button class="btn btn-sm" style="background:#38a169;color:#fff" onclick="updateTransferStatus('${esc(t.id)}','verified')">✓ Verificar</button>
+            <button class="btn btn-secondary btn-sm" onclick="updateTransferStatus('${esc(t.id)}','pending')">Pendiente</button>
+          ` : `
+            <button class="btn btn-secondary btn-sm" onclick="updateTransferStatus('${esc(t.id)}','pending')">Pendiente</button>
+          `}
+          <a class="btn btn-primary btn-sm" href="https://wa.me/${esc(t.from)}" target="_blank" rel="noopener">WhatsApp</a>
+          <button class="btn btn-danger btn-sm" onclick="deleteTransfer('${esc(t.id)}')">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateTransferStatus(id, status) {
+  await api('PUT', '/transfers/' + id, { status });
+  await loadTransfers();
+  const labels = { verified: 'Transferencia verificada', rejected: 'Transferencia rechazada', pending: 'Transferencia marcada como pendiente' };
+  toast(labels[status] || 'Transferencia actualizada');
+}
+
+async function deleteTransfer(id) {
+  if (!confirm('¿Eliminar esta transferencia?')) return;
+  await api('DELETE', '/transfers/' + id);
+  await loadTransfers();
+  toast('Transferencia eliminada');
+}
+
+// --- Banks ---
+let banksData = [];
+
+async function loadBanks() {
+  banksData = await api('GET', '/banks');
+  renderBanks();
+}
+
+function renderBanks() {
+  const list = document.getElementById('bank-list');
+  if (!banksData.length) { list.innerHTML = '<p style="color:#999">No hay cuentas bancarias. Agrega la primera.</p>'; return; }
+  list.innerHTML = banksData.map(item => `
+    <div class="kb-item ${item.activa ? '' : 'disabled'}">
+      <div class="kb-header">
+        <span class="flow-card-title">${esc(item.banco)}</span>
+        <span style="font-size:.75rem;color:#999">${item.activa ? 'Activa' : 'Inactiva'}</span>
+      </div>
+      <div style="font-size:.9rem;color:#555;margin-top:.4rem">
+        <b>Titular:</b> ${esc(item.titular)}<br>
+        <b>${item.tarjeta ? 'Tarjeta' : 'Cuenta'}:</b> ${esc(item.cuenta)}
+        ${item.descripcion ? `<br><b>Descripción:</b> ${esc(item.descripcion)}` : ''}
+      </div>
+      <div class="kb-actions">
+        <button class="btn btn-secondary btn-sm" onclick="toggleBank('${esc(item.id)}', ${!item.activa})">${item.activa ? 'Desactivar' : 'Activar'}</button>
+        <button class="btn btn-secondary btn-sm" onclick="editBank('${esc(item.id)}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBank('${esc(item.id)}')">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openBankModal(item) {
+  document.getElementById('bank-modal-title').textContent = item ? 'Editar Cuenta' : 'Agregar Cuenta';
+  document.getElementById('bank-edit-id').value = item ? item.id : '';
+  document.getElementById('bank-banco').value = item ? item.banco || '' : '';
+  document.getElementById('bank-titular').value = item ? item.titular || '' : '';
+  document.getElementById('bank-cuenta').value = item ? item.cuenta || '' : '';
+  document.getElementById('bank-descripcion').value = item ? item.descripcion || '' : '';
+  document.getElementById('bank-tarjeta').checked = item ? !!item.tarjeta : false;
+  document.getElementById('bank-activa').checked = item ? item.activa : true;
+  document.getElementById('bank-modal').classList.add('show');
+}
+
+function closeBankModal() { document.getElementById('bank-modal').classList.remove('show'); }
+
+function editBank(id) {
+  const item = banksData.find(b => b.id === id);
+  if (item) openBankModal(item);
+}
+
+async function saveBank() {
+  const id = document.getElementById('bank-edit-id').value;
+  const body = {
+    banco: document.getElementById('bank-banco').value.trim(),
+    titular: document.getElementById('bank-titular').value.trim(),
+    cuenta: document.getElementById('bank-cuenta').value.trim(),
+    descripcion: document.getElementById('bank-descripcion').value.trim(),
+    tarjeta: document.getElementById('bank-tarjeta').checked,
+    activa: document.getElementById('bank-activa').checked
+  };
+  if (!body.banco || !body.cuenta) { toast('Banco y cuenta son obligatorios'); return; }
+  if (id) { await api('PUT', '/banks/' + id, body); }
+  else { await api('POST', '/banks', body); }
+  closeBankModal();
+  await loadBanks();
+  toast(id ? 'Cuenta actualizada' : 'Cuenta agregada');
+}
+
+async function toggleBank(id, activa) {
+  await api('PUT', '/banks/' + id, { activa });
+  await loadBanks();
+  toast(activa ? 'Cuenta activada' : 'Cuenta desactivada');
+}
+
+async function deleteBank(id) {
+  if (!confirm('¿Eliminar esta cuenta bancaria?')) return;
+  await api('DELETE', '/banks/' + id);
+  await loadBanks();
+  toast('Cuenta eliminada');
+}
+
+function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : (s || ''); }
+function copyMsg(e, i, field) {
+  e.stopPropagation();
+  const full = (_logRows[i] || {})[field === 'msg' ? 'message' : 'reply'] || '';
+  navigator.clipboard.writeText(full).then(() => toast('Copiado'));
+}
+function toggleMsg(el, i, field) {
+  const full = (_logRows[i] || {})[field === 'msg' ? 'message' : 'reply'] || '';
+  if (el.dataset.expanded === '1') {
+    el.dataset.expanded = '0';
+    el.style.whiteSpace = '';
+    el.style.maxWidth = '';
+    el.innerHTML = esc(truncate(full, 80));
+  } else {
+    el.dataset.expanded = '1';
+    el.style.whiteSpace = 'pre-wrap';
+    el.style.maxWidth = '420px';
+    el.innerHTML = esc(full);
+  }
+}
+function formatDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  const tz = { timeZone: 'America/Mexico_City' };
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', ...tz }) + ' ' +
+         d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', ...tz });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+[
+  {
+    "flowId": "support_flow",
+    "flowName": "Soporte Técnico",
+    "from": "5214423705096",
+    "vars": {
+      "phone": "redmi note 13 pro",
+      "os": "Android",
+      "error": "que el dominio de mi correo no está permitido"
+    },
+    "id": "mllfpmg6vko7",
+    "status": "closed",
+    "createdAt": "2026-02-13T22:03:38.598Z"
+  },
+  {
+    "flowId": "support_flow",
+    "flowName": "Soporte Técnico",
+    "from": "5214891044570",
+    "vars": {
+      "phone": "oppo a5",
+      "os": "Android",
+      "error": "no se conecta a internet la app, dice error"
+    },
+    "id": "mltih99vqodd",
+    "status": "closed",
+    "createdAt": "2026-02-19T13:43:16.531Z"
+  },
+  {
+    "flowId": "support_flow",
+    "flowName": "Soporte Técnico",
+    "from": "5215660502644",
+    "vars": {
+      "phone": "xiaomi 14 t pro",
+      "os": "Android",
+      "error": "los gb que compra uno no se pueden utilizar"
+    },
+    "id": "mpumynln6109",
+    "status": "open",
+    "createdAt": "2026-06-01T03:15:22.236Z"
+  }
+]
