@@ -1,18 +1,1 @@
-[
-  {
-    "banco": "Banorte",
-    "titular": "Damian Reyes",
-    "cuenta": "072580010148173366",
-    "activa": true,
-    "id": "mlhg3abi6gdl"
-  },
-  {
-    "banco": "Spin OXXO",
-    "titular": "Damian Reyes",
-    "cuenta": "2242170680073725",
-    "activa": true,
-    "id": "mq411hozal55",
-    "descripcion": "*Solo para depósitos en tiendas OXXO*",
-    "tarjeta": true
-  }
-]
+[]
