@@ -10,8 +10,8 @@
 
   /* Login */
   #login-screen {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: #111; padding: 1rem;
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: #111; padding: 1rem; z-index: 200;
   }
   .login-box {
     background: #1c1c1e; padding: 2rem; border-radius: 18px;
@@ -228,7 +228,7 @@
 </div>
 
 <!-- App -->
-<div id="app">
+<div id="app" style="display:none">
   <header>
     <div class="header-brand">
       <span class="logo">👟</span>
@@ -359,20 +359,25 @@ async function doLogin() {
   password = pass;
   try {
     await capi('POST', '/auth');
-    localStorage.setItem('catalog_pass', pass);
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = '';
-    await loadCatalog();
   } catch {
     document.getElementById('login-error').style.display = 'block';
     password = '';
+    return;
   }
+  localStorage.setItem('catalog_pass', pass);
+  showApp();
+  loadCatalog().catch(e => toast('Error cargando catálogo: ' + e.message));
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
 function doLogout() {
   password = '';
   localStorage.removeItem('catalog_pass');
-  document.getElementById('login-screen').style.display = '';
+  document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').style.display = 'none';
@@ -381,13 +386,13 @@ function doLogout() {
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 (async () => {
-  if (password) {
-    try {
-      await capi('POST', '/auth');
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = '';
-      await loadCatalog();
-    } catch { doLogout(); }
+  if (!password) return;
+  try {
+    await capi('POST', '/auth');
+    showApp();
+    loadCatalog().catch(e => toast('Error cargando catálogo: ' + e.message));
+  } catch {
+    doLogout();
   }
 })();
 
