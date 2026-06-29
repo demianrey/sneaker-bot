@@ -108,6 +108,7 @@ Si el usuario pregunta algo fuera de VPN/internet, redirige amablemente al tema.
   'banks.json': [],
   'transfers.json': [],
   'funnel.json': [],
+  'catalog.json': [],
   'meta.json': {}
 }
 
@@ -544,6 +545,39 @@ function deleteTransfer(id) {
   return true
 }
 
+// Catalog
+function getCatalog() {
+  return readJSON('catalog.json') || []
+}
+
+function addProduct(product) {
+  const catalog = getCatalog()
+  product.id = 'prod_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  product.active = product.active !== undefined ? product.active : true
+  product.createdAt = new Date().toISOString()
+  catalog.push(product)
+  writeJSON('catalog.json', catalog)
+  return product
+}
+
+function updateProduct(id, updates) {
+  const catalog = getCatalog()
+  const idx = catalog.findIndex(p => p.id === id)
+  if (idx === -1) return null
+  catalog[idx] = { ...catalog[idx], ...updates, id }
+  writeJSON('catalog.json', catalog)
+  return catalog[idx]
+}
+
+function deleteProduct(id) {
+  const catalog = getCatalog()
+  const idx = catalog.findIndex(p => p.id === id)
+  if (idx === -1) return false
+  catalog.splice(idx, 1)
+  writeJSON('catalog.json', catalog)
+  return true
+}
+
 function getRatings() { return readJSON('ratings.json') || [] }
 
 function addRating(rating) {
@@ -621,5 +655,9 @@ module.exports = {
   getRatings,
   addRating,
   updateRating,
-  deleteRating
+  deleteRating,
+  getCatalog,
+  addProduct,
+  updateProduct,
+  deleteProduct
 }

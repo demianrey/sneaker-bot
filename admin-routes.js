@@ -1,12 +1,61 @@
 const express = require('express')
 const router = express.Router()
+const path = require('path')
+const fs = require('fs')
+const multer = require('multer')
 const adminAuth = require('./admin/auth')
 const storage = require('./admin/storage')
 const { sendMessage } = require('./whatsapp')
 const tg = require('./telegram')
 
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads')
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: UPLOADS_DIR,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+      cb(null, Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + ext)
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
+    cb(null, allowed.includes(file.mimetype))
+  }
+})
+
 // Auth on all API routes
 router.use('/api', adminAuth)
+
+// --- File upload ---
+router.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Archivo no válido o demasiado grande (máx 10MB). Solo se permiten imágenes.' })
+  const cfg = storage.getConfig()
+  const base = (cfg.BOT_BASE_URL || '').replace(/\/+$/, '')
+  res.json({ url: base + '/uploads/' + req.file.filename, filename: req.file.filename })
+})
+
+// --- Catalog ---
+router.get('/api/catalog', (req, res) => res.json(storage.getCatalog()))
+
+router.post('/api/catalog', (req, res) => {
+  const product = storage.addProduct(req.body)
+  res.status(201).json(product)
+})
+
+router.put('/api/catalog/:id', (req, res) => {
+  const updated = storage.updateProduct(req.params.id, req.body)
+  if (!updated) return res.status(404).json({ error: 'Producto no encontrado' })
+  res.json(updated)
+})
+
+router.delete('/api/catalog/:id', (req, res) => {
+  const deleted = storage.deleteProduct(req.params.id)
+  if (!deleted) return res.status(404).json({ error: 'Producto no encontrado' })
+  res.json({ ok: true })
+})
 
 // --- Flows ---
 router.get('/api/flows', (req, res) => {
