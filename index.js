@@ -20,6 +20,8 @@ app.use(express.static(path.join(__dirname, 'public')))
 // Admin API routes
 app.use('/admin', adminRoutes)
 
+app.get('/', (req, res) => res.redirect('/admin.html'))
+
 // Telegram's legacy Markdown parse_mode treats _ * ` [ as formatting delimiters —
 // an unmatched one anywhere in the message (e.g. a single "_" in a user's email)
 // makes Telegram reject the WHOLE message with 400 "can't parse entities" and the
