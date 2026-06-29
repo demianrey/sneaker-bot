@@ -23,12 +23,13 @@ const KEY_EMOJIS = {
   '9': '9️⃣', '10': '🔟'
 }
 
-// ── Carga hot-reload de flows ──────────────────────────────────────────────
+// ── Carga hot-reload de flows y catálogo ──────────────────────────────────
 const fs = require('fs')
 const path = require('path')
-const FLOWS_PATH = path.join(__dirname, 'data', 'flows.json')
-let _flowsCache = null
-let _flowsCacheAt = 0
+const FLOWS_PATH   = path.join(__dirname, 'data', 'flows.json')
+const CATALOG_PATH = path.join(__dirname, 'data', 'catalog.json')
+let _flowsCache = null, _flowsCacheAt = 0
+let _catalogCache = null, _catalogCacheAt = 0
 const FLOWS_TTL = 60_000
 
 function loadFlows() {
@@ -41,6 +42,15 @@ function loadFlows() {
     if (!_flowsCache) _flowsCache = { menu: { triggers: [], options: [], flows: [] }, options: [], flows: [] }
   }
   return _flowsCache
+}
+
+function loadCatalog() {
+  if (_catalogCache && Date.now() - _catalogCacheAt < FLOWS_TTL) return _catalogCache
+  try {
+    _catalogCache = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'))
+    _catalogCacheAt = Date.now()
+  } catch { _catalogCache = [] }
+  return _catalogCache
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -155,13 +165,63 @@ function handleActiveFlow(msg, state, from) {
   return { text: completionMsg, ticket: ticketPayload, notifyHuman: flowDef.createTicket }
 }
 
+// ── Búsqueda en catálogo ──────────────────────────────────────────────────
+const STOP_WORDS = new Set(['que', 'los', 'las', 'una', 'uno', 'con', 'sin', 'para', 'por', 'del', 'der', 'hay', 'tiene', 'tienen', 'busco', 'quiero', 'ver', 'dame', 'show', 'the'])
+
+function searchCatalog(msg) {
+  const catalog = loadCatalog().filter(p => p.active !== false)
+  if (!catalog.length) return null
+
+  const words = msg.split(/\s+/).filter(w => w.length >= 3 && !STOP_WORDS.has(w))
+  if (!words.length) return null
+
+  const scored = catalog.map(p => {
+    const haystack = ((p.name || '') + ' ' + (p.brand || '')).toLowerCase()
+    const score = words.reduce((acc, w) => acc + (haystack.includes(w) ? 1 : 0), 0)
+    return { p, score }
+  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score)
+
+  if (!scored.length) return null
+
+  const { p } = scored[0]
+
+  // Formato de precio
+  const fmtPrice = n => '$' + Number(n).toLocaleString('es-MX')
+  const price = p.priceMin
+    ? (p.priceMax && p.priceMax !== p.priceMin
+        ? `${fmtPrice(p.priceMin)} – ${fmtPrice(p.priceMax)} MXN`
+        : `${fmtPrice(p.priceMin)} MXN`)
+    : null
+
+  // Texto principal
+  let text = `👟 *${p.name}*`
+  if (p.brand) text += `\n_${p.brand}_`
+  if (price)   text += `\n\n💰 *Precio:* ${price}`
+  if (p.sizes?.length) text += `\n📏 *Tallas disponibles:* ${p.sizes.join(', ')}`
+  if (p.description)   text += `\n\n${p.description}`
+
+  // Otros resultados relevantes
+  if (scored.length > 1) {
+    const others = scored.slice(1, 4).map(s => `• ${s.p.name}${s.p.brand ? ' (' + s.p.brand + ')' : ''}`).join('\n')
+    text += `\n\n_También encontré:_\n${others}`
+  }
+
+  text += '\n\n¿Te interesa? Escribe *3* para hacer tu pedido o *menú* para más opciones.'
+
+  // Máximo 3 imágenes para no saturar el chat
+  const images = (p.images || []).slice(0, 3)
+  const media = images.map((url, i) => ({ type: 'image', url, caption: i === 0 ? p.name : '' }))
+
+  return { text, media: media.length ? media : null }
+}
+
 // ── Flujo de compra activo ─────────────────────────────────────────────────
 function isPurchaseActive(state) {
   return state && state.activeFlowId === 'flow_comprar' && state.flowStepIndex !== undefined
 }
 
 // ── handleMessage principal ────────────────────────────────────────────────
-async function handleMessage({ from, text, mediaInfo }) {
+async function handleMessage(text, from, mediaInfo, adRef) {
   const msg = (text || '').toLowerCase().trim()
   const state = getState(from) || {}
   const flows = loadFlows()
@@ -262,6 +322,16 @@ async function handleMessage({ from, text, mediaInfo }) {
       reply: replacePlaceholders(matchedOption.response),
       intent: matchedOption.intent,
       notifyHuman: matchedOption.notifyHuman || false
+    }
+  }
+
+  // 5.5. Búsqueda en catálogo (antes del fallback IA)
+  const catalogResult = searchCatalog(msg)
+  if (catalogResult) {
+    return {
+      reply: catalogResult.text,
+      media: catalogResult.media,
+      intent: 'catalog_search'
     }
   }
 
