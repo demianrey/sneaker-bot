@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SneakerDrop — Catálogo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; color: #1a1a1a; min-height: 100vh; }
+
+  /* Login */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #111; padding: 1rem;
+  }
+  .login-box {
+    background: #1c1c1e; padding: 2rem; border-radius: 18px;
+    width: 100%; max-width: 340px; text-align: center;
+  }
+  .login-box .logo { font-size: 3rem; margin-bottom: .5rem; }
+  .login-box h2 { color: #fff; font-size: 1.25rem; margin-bottom: .2rem; }
+  .login-box p { color: #888; font-size: .85rem; margin-bottom: 1.5rem; }
+  .login-error { color: #f87171; font-size: .82rem; margin-bottom: .75rem; display: none; }
+  .login-box input {
+    width: 100%; padding: .8rem 1rem; border: 1px solid #333; border-radius: 10px;
+    font-size: 1rem; margin-bottom: 1rem; background: #2c2c2e; color: #fff;
+  }
+  .login-box input::placeholder { color: #555; }
+  .login-box button {
+    width: 100%; padding: .8rem; background: #f97316; color: #fff;
+    border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+
+  /* App */
+  #app { display: none; }
+
+  header {
+    background: #111; color: #fff; padding: .85rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-brand { display: flex; align-items: center; gap: .5rem; }
+  .header-brand .logo { font-size: 1.4rem; }
+  .header-brand h1 { font-size: 1rem; font-weight: 700; }
+  .header-brand small { color: #888; font-size: .72rem; margin-left: .2rem; }
+  #btn-logout { background: #2c2c2e; border: none; color: #aaa; padding: .4rem .8rem; border-radius: 8px; cursor: pointer; font-size: .8rem; }
+
+  /* Toolbar */
+  .toolbar {
+    background: #fff; border-bottom: 1px solid #e5e5ea;
+    padding: .75rem 1rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+  }
+  .toolbar input[type=search] {
+    flex: 1; min-width: 140px; padding: .5rem .75rem; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: .9rem;
+  }
+  .toolbar input:focus { outline: none; border-color: #f97316; }
+  .btn-add {
+    background: #f97316; color: #fff; border: none; border-radius: 10px;
+    padding: .55rem 1.1rem; font-size: .9rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: .35rem; white-space: nowrap;
+  }
+  .btn-add:hover { background: #ea6c0a; }
+  .count-badge { font-size: .78rem; color: #888; white-space: nowrap; }
+
+  /* Grid */
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: .85rem; padding: 1rem;
+  }
+  @media (min-width: 480px) { .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
+  @media (min-width: 768px) { .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; padding: 1.25rem; } }
+
+  .prod-card {
+    background: #fff; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07); cursor: pointer; transition: transform .15s, box-shadow .15s;
+    display: flex; flex-direction: column;
+  }
+  .prod-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+  .prod-card.inactive { opacity: .5; }
+  .prod-thumb {
+    width: 100%; aspect-ratio: 1; object-fit: cover; background: #f0f0f5;
+    display: block;
+  }
+  .prod-thumb-placeholder {
+    width: 100%; aspect-ratio: 1; background: #f0f0f5;
+    display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+  }
+  .prod-body { padding: .7rem; flex: 1; display: flex; flex-direction: column; gap: .2rem; }
+  .prod-brand { font-size: .7rem; color: #f97316; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .prod-name { font-weight: 700; font-size: .88rem; line-height: 1.3; }
+  .prod-price { font-size: .88rem; font-weight: 700; color: #111; margin-top: .2rem; }
+  .prod-sizes { font-size: .72rem; color: #888; }
+  .prod-inactive-tag { font-size: .68rem; color: #999; font-style: italic; }
+  .prod-actions { display: flex; gap: .35rem; padding: .5rem .7rem .7rem; }
+  .prod-actions button {
+    flex: 1; padding: .4rem; border: none; border-radius: 7px;
+    font-size: .78rem; font-weight: 600; cursor: pointer;
+  }
+  .btn-edit { background: #f5f5f7; color: #333; }
+  .btn-edit:hover { background: #e5e5ea; }
+  .btn-delete { background: #fff0f0; color: #ef4444; }
+  .btn-delete:hover { background: #ffe4e4; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 4rem 2rem; color: #999;
+  }
+  .empty-state .em-icon { font-size: 4rem; margin-bottom: 1rem; }
+  .empty-state p { font-size: .95rem; }
+  .empty-state .em-hint { font-size: .82rem; margin-top: .4rem; color: #bbb; }
+
+  /* Modal overlay */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 500; padding-top: 2rem;
+  }
+  .overlay.show { display: flex; }
+  @media (min-width: 600px) { .overlay { align-items: center; } }
+
+  /* Modal sheet */
+  .sheet {
+    background: #fff; width: 100%; max-width: 540px;
+    border-radius: 20px 20px 0 0; max-height: 94vh; overflow-y: auto;
+    padding: 1.25rem 1.1rem 2rem;
+  }
+  @media (min-width: 600px) { .sheet { border-radius: 20px; max-height: 90vh; } }
+  .sheet-handle {
+    width: 36px; height: 4px; background: #d1d5db; border-radius: 2px;
+    margin: 0 auto .85rem;
+  }
+  .sheet h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; }
+
+  label { display: block; font-size: .8rem; font-weight: 700; color: #444; margin: .7rem 0 .25rem; }
+  input[type=text], input[type=number], textarea, select {
+    width: 100%; padding: .65rem .8rem; border: 1.5px solid #e5e5ea; border-radius: 10px;
+    font-size: .9rem; font-family: inherit; background: #fff; transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
+  textarea { min-height: 80px; resize: vertical; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed #d1d5db; border-radius: 12px; padding: 1.1rem;
+    text-align: center; cursor: pointer; transition: all .15s; position: relative; background: #fafafa;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: #f97316; background: #fff7ed; }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .uz-text { font-size: .82rem; color: #888; pointer-events: none; }
+  .uz-text b { color: #f97316; }
+  .upload-bar-wrap { height: 4px; background: #e5e5ea; border-radius: 2px; margin-top: .5rem; overflow: hidden; display: none; }
+  .upload-bar { height: 100%; background: #f97316; width: 0%; transition: width .2s; border-radius: 2px; }
+
+  /* Image pills */
+  .img-pills { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+  .img-pill {
+    display: flex; align-items: center; gap: .3rem;
+    background: #f5f5f7; border-radius: 8px; padding: .3rem .5rem;
+    font-size: .75rem; max-width: 200px;
+  }
+  .img-pill img { width: 30px; height: 30px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+  .img-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .img-pill button { background: none; border: none; cursor: pointer; color: #ef4444; font-size: 1rem; padding: 0 2px; flex-shrink: 0; }
+
+  /* Sizes */
+  .size-input-row { display: flex; gap: .4rem; }
+  .size-input-row input { flex: 1; }
+  .size-input-row button { background: #f5f5f7; border: 1.5px solid #e5e5ea; border-radius: 10px; padding: .5rem .85rem; font-size: .82rem; font-weight: 700; cursor: pointer; white-space: nowrap; color: #333; }
+  .size-input-row button:hover { background: #e5e5ea; }
+  .size-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+  .size-chip {
+    background: #f5f5f7; border: 1.5px solid #e5e5ea; border-radius: 7px;
+    padding: .25rem .55rem; font-size: .8rem; display: flex; align-items: center; gap: .3rem;
+  }
+  .size-chip button { background: none; border: none; cursor: pointer; color: #ef4444; font-size: .9rem; padding: 0; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: .6rem 0; }
+  .toggle-label { font-size: .88rem; font-weight: 600; }
+  .toggle-sub { font-size: .75rem; color: #888; margin-top: .1rem; }
+  .toggle-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 26px; transition: .2s; }
+  .toggle-slider:before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .toggle-switch input:checked + .toggle-slider { background: #16a34a; }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+  /* Save button */
+  .save-btn {
+    width: 100%; padding: .85rem; background: #f97316; color: #fff;
+    border: none; border-radius: 12px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-top: 1rem; transition: background .15s;
+  }
+  .save-btn:hover { background: #ea6c0a; }
+  .save-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #111; color: #fff; padding: .65rem 1.25rem; border-radius: 10px;
+    font-size: .875rem; opacity: 0; transition: all .25s; z-index: 999;
+    white-space: nowrap; border-left: 3px solid #f97316;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Image lightbox */
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 1000; cursor: zoom-out; }
+  #lightbox.show { display: flex; }
+  #lightbox img { max-width: 94vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo">👟</div>
+    <h2>Catálogo SneakerDrop</h2>
+    <p>Ingresa tu contraseña para gestionar los productos</p>
+    <p class="login-error" id="login-error">Contraseña incorrecta</p>
+    <input type="password" id="login-pass" placeholder="Contraseña" autofocus>
+    <button onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <header>
+    <div class="header-brand">
+      <span class="logo">👟</span>
+      <h1>Catálogo<small>SneakerDrop</small></h1>
+    </div>
+    <button id="btn-logout" onclick="doLogout()">Salir</button>
+  </header>
+
+  <div class="toolbar">
+    <input type="search" id="search-input" placeholder="🔍 Buscar por nombre o marca..." oninput="renderGrid()">
+    <button class="btn-add" onclick="openModal()">
+      <span>+</span> Agregar tenis
+    </button>
+    <span class="count-badge" id="count-badge"></span>
+  </div>
+
+  <div id="empty-state" class="empty-state" style="display:none">
+    <div class="em-icon">👟</div>
+    <p>No hay productos en el catálogo</p>
+    <p class="em-hint">Agrega el primero con el botón de arriba</p>
+  </div>
+
+  <div class="catalog-grid" id="catalog-grid"></div>
+</div>
+
+<!-- Product Modal -->
+<div class="overlay" id="product-overlay" onclick="handleOverlayClick(event)">
+  <div class="sheet" id="product-sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="modal-title">Agregar producto</h3>
+    <input type="hidden" id="prod-id">
+
+    <label>Nombre del modelo *</label>
+    <input type="text" id="prod-name" placeholder="ej. Air Jordan 1 Retro High OG">
+
+    <label>Marca</label>
+    <input type="text" id="prod-brand" placeholder="ej. Nike, Adidas, New Balance, Puma…">
+
+    <label>Descripción</label>
+    <textarea id="prod-desc" placeholder="Colorway, materiales, detalles del modelo…"></textarea>
+
+    <div class="two-col">
+      <div>
+        <label>Precio (MXN) *</label>
+        <input type="number" id="prod-price-min" placeholder="2500" min="0">
+      </div>
+      <div>
+        <label>Hasta (si hay rango)</label>
+        <input type="number" id="prod-price-max" placeholder="3200" min="0">
+      </div>
+    </div>
+
+    <label>Tallas disponibles</label>
+    <div class="size-input-row">
+      <input type="text" id="size-input" placeholder="ej. 25, 26, 27.5 o S, M, L" onkeydown="if(event.key==='Enter'){event.preventDefault();addSize()}">
+      <button onclick="addSize()">+ Agregar</button>
+    </div>
+    <div class="size-chips" id="size-chips"></div>
+
+    <label style="margin-top:.85rem">Imágenes del producto</label>
+    <div class="upload-zone" id="upload-zone"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="handleDrop(event)">
+      <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <div class="uz-text">
+        📸 <b>Toca aquí</b> para subir fotos<br>
+        <span style="font-size:.72rem">o arrastra imágenes · JPG, PNG, WebP · máx 10MB</span>
+      </div>
+      <div class="upload-bar-wrap" id="upload-wrap"><div class="upload-bar" id="upload-bar"></div></div>
+    </div>
+
+    <div style="display:flex;gap:.4rem;margin-top:.6rem">
+      <input type="text" id="img-url-input" placeholder="O pega una URL de imagen aquí…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addUrl()}">
+      <button onclick="addUrl()" style="background:#f5f5f7;border:1.5px solid #e5e5ea;border-radius:10px;padding:.5rem .75rem;font-size:.82rem;font-weight:700;cursor:pointer;color:#333">+ URL</button>
+    </div>
+    <div class="img-pills" id="img-pills"></div>
+
+    <div style="margin-top:1rem">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Producto activo</div>
+          <div class="toggle-sub">Visible para consultas del bot</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="prod-active" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <button class="save-btn" id="save-btn" onclick="saveProduct()">Guardar producto</button>
+    <button onclick="closeModal()" style="width:100%;padding:.7rem;background:none;border:none;color:#888;font-size:.88rem;cursor:pointer;margin-top:.35rem">Cancelar</button>
+  </div>
+</div>
+
+<!-- Image lightbox -->
+<div id="lightbox" onclick="this.classList.remove('show')">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CAPI = '/admin/catalog-api';
+let password = localStorage.getItem('catalog_pass') || '';
+let catalog = [];
+let prodImages = [];
+let prodSizes = [];
+
+function catalogHeaders() {
+  return { 'Authorization': 'Basic ' + btoa('catalog:' + password), 'Content-Type': 'application/json' };
+}
+
+async function capi(method, path, body) {
+  const opts = { method, headers: catalogHeaders() };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(CAPI + path, opts);
+  if (res.status === 401) { doLogout(); throw new Error('No autorizado'); }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error del servidor');
+  return data;
+}
+
+async function doLogin() {
+  const pass = document.getElementById('login-pass').value.trim();
+  if (!pass) return;
+  password = pass;
+  try {
+    await capi('POST', '/auth');
+    localStorage.setItem('catalog_pass', pass);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    await loadCatalog();
+  } catch {
+    document.getElementById('login-error').style.display = 'block';
+    password = '';
+  }
+}
+
+function doLogout() {
+  password = '';
+  localStorage.removeItem('catalog_pass');
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+(async () => {
+  if (password) {
+    try {
+      await capi('POST', '/auth');
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = '';
+      await loadCatalog();
+    } catch { doLogout(); }
+  }
+})();
+
+// ── Load & render ──────────────────────────────────────────────────────────
+async function loadCatalog() {
+  catalog = await capi('GET', '/catalog');
+  renderGrid();
+}
+
+function renderGrid() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  const filtered = q ? catalog.filter(p =>
+    (p.name || '').toLowerCase().includes(q) ||
+    (p.brand || '').toLowerCase().includes(q)
+  ) : catalog;
+
+  const badge = document.getElementById('count-badge');
+  badge.textContent = filtered.length
+    ? filtered.length + (filtered.length === 1 ? ' producto' : ' productos')
+    : '';
+
+  const grid = document.getElementById('catalog-grid');
+  const empty = document.getElementById('empty-state');
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.style.display = q ? 'none' : '';
+    if (q) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#999">Sin resultados para "' + esc(q) + '"</div>';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = filtered.map(p => {
+    const thumb = (p.images || [])[0] || '';
+    const price = fmtPrice(p.priceMin, p.priceMax);
+    const sizes = (p.sizes || []).slice(0, 8).join(', ') + ((p.sizes || []).length > 8 ? '…' : '');
+    return `<div class="prod-card ${p.active === false ? 'inactive' : ''}">
+      ${thumb
+        ? `<img class="prod-thumb" src="${esc(thumb)}" loading="lazy" alt="${esc(p.name || '')}" onclick="showLightbox('${esc(thumb)}')" onerror="this.parentNode.querySelector('.prod-thumb-placeholder').style.display='flex';this.style.display='none'">`
+        : ''
+      }
+      <div class="prod-thumb-placeholder" style="${thumb ? 'display:none' : ''}">👟</div>
+      <div class="prod-body">
+        ${p.brand ? `<div class="prod-brand">${esc(p.brand)}</div>` : ''}
+        <div class="prod-name">${esc(p.name || 'Sin nombre')}</div>
+        ${price ? `<div class="prod-price">${esc(price)}</div>` : ''}
+        ${sizes ? `<div class="prod-sizes">Tallas: ${esc(sizes)}</div>` : ''}
+        ${p.active === false ? `<div class="prod-inactive-tag">· inactivo</div>` : ''}
+      </div>
+      <div class="prod-actions">
+        <button class="btn-edit" onclick="editProduct('${esc(p.id)}')">✏️ Editar</button>
+        <button class="btn-delete" onclick="deleteProduct('${esc(p.id)}', event)">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtPrice(min, max) {
+  if (!min) return '';
+  const f = n => '$' + Number(n).toLocaleString('es-MX');
+  return (max && max !== min) ? f(min) + ' – ' + f(max) : f(min);
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openModal(product) {
+  prodImages = product ? [...(product.images || [])] : [];
+  prodSizes = product ? [...(product.sizes || [])] : [];
+  document.getElementById('modal-title').textContent = product ? 'Editar producto' : 'Agregar producto';
+  document.getElementById('prod-id').value = product ? product.id : '';
+  document.getElementById('prod-name').value = product ? product.name || '' : '';
+  document.getElementById('prod-brand').value = product ? product.brand || '' : '';
+  document.getElementById('prod-desc').value = product ? product.description || '' : '';
+  document.getElementById('prod-price-min').value = product ? product.priceMin || '' : '';
+  document.getElementById('prod-price-max').value = product ? product.priceMax || '' : '';
+  document.getElementById('prod-active').checked = product ? product.active !== false : true;
+  document.getElementById('size-input').value = '';
+  document.getElementById('img-url-input').value = '';
+  renderPills(); renderChips();
+  document.getElementById('product-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('prod-name').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('product-overlay').classList.remove('show');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('product-overlay')) closeModal();
+}
+
+function editProduct(id) {
+  const p = catalog.find(c => c.id === id);
+  if (p) openModal(p);
+}
+
+async function deleteProduct(id, e) {
+  if (e) e.stopPropagation();
+  const p = catalog.find(c => c.id === id);
+  if (!confirm(`¿Eliminar "${p?.name || 'este producto'}"?\nEsta acción no se puede deshacer.`)) return;
+  await capi('DELETE', '/catalog/' + id);
+  catalog = catalog.filter(c => c.id !== id);
+  renderGrid();
+  toast('Producto eliminado');
+}
+
+async function saveProduct() {
+  const id = document.getElementById('prod-id').value;
+  const name = document.getElementById('prod-name').value.trim();
+  if (!name) { toast('El nombre es obligatorio'); document.getElementById('prod-name').focus(); return; }
+  const priceMin = parseFloat(document.getElementById('prod-price-min').value) || null;
+  const priceMax = parseFloat(document.getElementById('prod-price-max').value) || null;
+  const body = {
+    name,
+    brand: document.getElementById('prod-brand').value.trim(),
+    description: document.getElementById('prod-desc').value.trim(),
+    priceMin,
+    priceMax: priceMax && priceMax !== priceMin ? priceMax : null,
+    sizes: [...prodSizes],
+    images: [...prodImages],
+    active: document.getElementById('prod-active').checked
+  };
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    if (id) {
+      const updated = await capi('PUT', '/catalog/' + id, body);
+      const idx = catalog.findIndex(c => c.id === id);
+      if (idx >= 0) catalog[idx] = updated;
+    } else {
+      const created = await capi('POST', '/catalog', body);
+      catalog.push(created);
+    }
+    closeModal(); renderGrid();
+    toast(id ? '✅ Producto actualizado' : '✅ Producto agregado');
+  } catch (e) { toast('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Guardar producto';
+}
+
+// ── Sizes ──────────────────────────────────────────────────────────────────
+function addSize() {
+  const val = document.getElementById('size-input').value.trim();
+  if (!val) return;
+  val.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+    if (!prodSizes.includes(s)) prodSizes.push(s);
+  });
+  document.getElementById('size-input').value = '';
+  renderChips();
+}
+
+function removeSize(s) { prodSizes = prodSizes.filter(x => x !== s); renderChips(); }
+
+function renderChips() {
+  document.getElementById('size-chips').innerHTML = prodSizes.map(s =>
+    `<div class="size-chip">${esc(s)}<button onclick="removeSize('${esc(s)}')">×</button></div>`
+  ).join('');
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────
+function addUrl() {
+  const url = document.getElementById('img-url-input').value.trim();
+  if (!url) return;
+  if (!prodImages.includes(url)) prodImages.push(url);
+  document.getElementById('img-url-input').value = '';
+  renderPills();
+}
+
+function removeImage(i) { prodImages.splice(i, 1); renderPills(); }
+
+function renderPills() {
+  document.getElementById('img-pills').innerHTML = prodImages.map((url, i) =>
+    `<div class="img-pill">
+      <img src="${esc(url)}" onerror="this.style.display='none'" alt="">
+      <span title="${esc(url)}">${esc(url.split('/').pop().slice(0, 22))}</span>
+      <button onclick="removeImage(${i})">×</button>
+    </div>`
+  ).join('');
+}
+
+async function uploadFile(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', CAPI + '/upload');
+    xhr.setRequestHeader('Authorization', 'Basic ' + btoa('catalog:' + password));
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        document.getElementById('upload-bar').style.width = Math.round(e.loaded / e.total * 100) + '%';
+      }
+    };
+    xhr.onload = () => {
+      try {
+        const d = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) resolve(d.url);
+        else reject(new Error(d.error || 'Error al subir'));
+      } catch { reject(new Error('Error al subir')); }
+    };
+    xhr.onerror = () => reject(new Error('Error de red'));
+    xhr.send(fd);
+  });
+}
+
+async function handleFiles(files) {
+  const list = [...files];
+  if (!list.length) return;
+  const wrap = document.getElementById('upload-wrap');
+  const bar = document.getElementById('upload-bar');
+  wrap.style.display = '';
+  bar.style.width = '0%';
+  for (let i = 0; i < list.length; i++) {
+    try {
+      bar.style.width = Math.round((i / list.length) * 100) + '%';
+      const url = await uploadFile(list[i]);
+      if (!prodImages.includes(url)) prodImages.push(url);
+      renderPills();
+    } catch (e) { toast('Error: ' + e.message); }
+  }
+  bar.style.width = '100%';
+  setTimeout(() => { wrap.style.display = 'none'; bar.style.width = '0%'; }, 500);
+  document.getElementById('file-input').value = '';
+  toast(list.length > 1 ? `✅ ${list.length} imágenes subidas` : '✅ Imagen subida');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (!files.length) { toast('Solo se permiten imágenes'); return; }
+  handleFiles(files);
+}
+
+// ── Lightbox ───────────────────────────────────────────────────────────────
+function showLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>

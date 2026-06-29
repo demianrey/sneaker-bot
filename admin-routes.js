@@ -4,6 +4,7 @@ const path = require('path')
 const fs = require('fs')
 const multer = require('multer')
 const adminAuth = require('./admin/auth')
+const catalogAuth = require('./admin/catalog-auth')
 const storage = require('./admin/storage')
 const { sendMessage } = require('./whatsapp')
 const tg = require('./telegram')
@@ -418,6 +419,40 @@ router.get('/api/stats', (req, res) => {
     perDay,
     perDayUsers
   })
+})
+
+// ── Catalog API (accessible with catalog password OR admin password) ──────────
+router.use('/catalog-api', catalogAuth)
+
+router.post('/catalog-api/auth', (req, res) => {
+  // Password already validated by middleware — just confirm OK
+  res.json({ ok: true })
+})
+
+router.get('/catalog-api/catalog', (req, res) => res.json(storage.getCatalog()))
+
+router.post('/catalog-api/catalog', (req, res) => {
+  const product = storage.addProduct(req.body)
+  res.status(201).json(product)
+})
+
+router.put('/catalog-api/catalog/:id', (req, res) => {
+  const updated = storage.updateProduct(req.params.id, req.body)
+  if (!updated) return res.status(404).json({ error: 'Producto no encontrado' })
+  res.json(updated)
+})
+
+router.delete('/catalog-api/catalog/:id', (req, res) => {
+  const deleted = storage.deleteProduct(req.params.id)
+  if (!deleted) return res.status(404).json({ error: 'Producto no encontrado' })
+  res.json({ ok: true })
+})
+
+router.post('/catalog-api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Archivo no válido o demasiado grande (máx 10MB). Solo imágenes.' })
+  const cfg = storage.getConfig()
+  const base = (cfg.BOT_BASE_URL || '').replace(/\/+$/, '')
+  res.json({ url: base + '/uploads/' + req.file.filename, filename: req.file.filename })
 })
 
 module.exports = router
